@@ -1549,7 +1549,10 @@ const layer = Layer.effect(
                   write: model?.cost?.cache_write ?? existingModel?.cost?.cache.write ?? 0,
                 },
               },
-              options: mergeDeep(existingModel?.options ?? {}, model.options ?? {}),
+              options: mergeDeep(
+                mergeDeep(existingModel?.options ?? {}, model.options ?? {}),
+                model.outputTokenMax !== undefined ? { outputTokenMax: model.outputTokenMax } : {},
+              ),
               limit: {
                 context: model.limit?.context ?? existingModel?.limit?.context ?? 0,
                 input: model.limit?.input ?? existingModel?.limit?.input,
@@ -2040,7 +2043,7 @@ const layer = Layer.effect(
 )
 
 const priority = ["gpt-5", "claude-sonnet-4", "big-pickle", "gemini-3-pro"]
-const smallModelFamilyPriority = ["gemini-flash", "gpt-nano", "claude-haiku"]
+const smallModelFamilyPriority = ["gemini-flash", "gpt-nano", "claude-haiku", "deepseek-flash"]
 export function sort<T extends { id: string }>(models: T[]) {
   return sortBy(
     models,
