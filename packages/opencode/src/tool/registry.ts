@@ -10,6 +10,9 @@ import { GlobTool } from "./glob"
 import { GrepTool } from "./grep"
 import { ReadTool } from "./read"
 import { TaskTool } from "./task"
+import { DelegateTool } from "./delegate"
+import { WorktreeCreateTool } from "./worktree-create"
+import { WorktreeDeleteTool } from "./worktree-delete"
 import { Database } from "@opencode-ai/core/database/database"
 import { TodoWriteTool } from "./todo"
 import { WebFetchTool } from "./webfetch"
@@ -54,6 +57,9 @@ import { ModelV2 } from "@opencode-ai/core/model"
 import { MCP } from "@/mcp"
 import { PermissionV1 } from "@opencode-ai/core/v1/permission"
 import { McpCatalog } from "@/mcp/catalog"
+import { Worktree } from "@/worktree"
+import { InstanceStore } from "@/project/instance-store"
+import { Git } from "@/git"
 
 export function webSearchEnabled(providerID: ProviderV2.ID, flags = { exa: false, parallel: false }) {
   return (
@@ -100,6 +106,9 @@ const layer = Layer.effect(
 
     const invalid = yield* InvalidTool
     const task = yield* TaskTool
+    const delegate = yield* DelegateTool
+    const worktreeCreate = yield* WorktreeCreateTool
+    const worktreeDelete = yield* WorktreeDeleteTool
     const read = yield* ReadTool
     const question = yield* QuestionTool
     const todo = yield* TodoWriteTool
@@ -215,6 +224,9 @@ const layer = Layer.effect(
           edit: Tool.init(edit),
           write: Tool.init(writetool),
           task: Tool.init(task),
+          delegate: Tool.init(delegate),
+          worktreeCreate: Tool.init(worktreeCreate),
+          worktreeDelete: Tool.init(worktreeDelete),
           fetch: Tool.init(webfetch),
           todo: Tool.init(todo),
           search: Tool.init(websearch),
@@ -238,6 +250,9 @@ const layer = Layer.effect(
             tool.edit,
             tool.write,
             tool.task,
+            tool.delegate,
+            tool.worktreeCreate,
+            tool.worktreeDelete,
             tool.fetch,
             tool.todo,
             tool.search,
@@ -446,6 +461,9 @@ export const node = LayerNode.make({
     Format.node,
     Truncate.node,
     RuntimeFlags.node,
+    InstanceStore.node,
+    Worktree.node,
+    Git.node,
     MCP.node,
     Database.node,
     Ripgrep.node,

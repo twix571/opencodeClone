@@ -1,0 +1,6 @@
+Delete a git worktree after its work is merged or abandoned.
+
+Use when you are done with a worktree created by worktree_create or a delegate task.
+Any uncommitted changes in the worktree are committed automatically (with the given reason as the commit message) so nothing is lost.
+
+After deletion the worktree directory is removed and its branch is deleted. Merge the branch into your current branch before deleting if the work is still needed.
