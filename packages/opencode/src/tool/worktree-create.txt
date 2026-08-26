@@ -1,0 +1,8 @@
+Create a git worktree on its own branch for isolated work.
+
+Use when you need to make changes without touching your current workspace — for example to hand off an independent piece of work to a delegated agent, or to test a refactor in isolation.
+
+The tool waits until the worktree is booted and returns its name, branch, and directory.
+The worktree is a full checkout: you can read, edit, and run commands inside its directory without affecting your current workspace.
+
+When the work is done, commit it inside the worktree, merge its branch into your current branch, and call worktree_delete to clean up.
