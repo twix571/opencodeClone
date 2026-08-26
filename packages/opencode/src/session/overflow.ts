@@ -7,13 +7,22 @@ import type { MessageV2 } from "./message-v2"
 
 const COMPACTION_BUFFER = 20_000
 
+// Large-context models can run longer before needing a reserve; scale the
+// fixed buffer so the reserve grows with context instead of staying tiny
+// relative to a 1M+ window. Below 200k the formula never exceeds the floor,
+// so behavior is unchanged for the classic small-context models.
+function compactionBuffer(context: number) {
+  if (context < 200_000) return COMPACTION_BUFFER
+  return Math.max(COMPACTION_BUFFER, Math.round(context * 0.02))
+}
+
 export function usable(input: { cfg: ConfigV1.Info; model: Provider.Model; outputTokenMax?: number }) {
   const context = input.model.limit.context
   if (context === 0) return 0
 
   const reserved =
     input.cfg.compaction?.reserved ??
-    Math.min(COMPACTION_BUFFER, ProviderTransform.maxOutputTokens(input.model, input.outputTokenMax))
+    Math.min(compactionBuffer(context), ProviderTransform.maxOutputTokens(input.model, input.outputTokenMax))
   return input.model.limit.input
     ? Math.max(0, input.model.limit.input - reserved)
     : Math.max(0, context - ProviderTransform.maxOutputTokens(input.model, input.outputTokenMax))

@@ -302,6 +302,154 @@ describe("ProviderTransform.options - setCacheKey", () => {
   })
 })
 
+describe("ProviderTransform.options - deepseek prompt caching", () => {
+  const sessionID = "test-session-123"
+
+  const deepseekModel = {
+    id: "deepseek/deepseek-v4-flash",
+    providerID: "deepseek",
+    api: {
+      id: "deepseek-v4-flash",
+      url: "https://api.deepseek.com",
+      npm: "@ai-sdk/openai-compatible",
+    },
+    name: "DeepSeek V4 Flash",
+    capabilities: {
+      temperature: true,
+      reasoning: true,
+      attachment: false,
+      toolcall: true,
+      input: { text: true, audio: false, image: false, video: false, pdf: false },
+      output: { text: true, audio: false, image: false, video: false, pdf: false },
+      interleaved: { field: "reasoning_content" },
+    },
+    cost: { input: 0.14, output: 0.28, cache: { read: 0.0028, write: 0.14 } },
+    limit: { context: 1_000_000, output: 384_000 },
+    status: "active",
+    family: "deepseek-flash",
+    options: {},
+    headers: {},
+    release_date: "2026-01-01",
+  } as any
+
+  test("emits prompt_cache_key for deepseek by default", () => {
+    const result = ProviderTransform.options({ model: deepseekModel, sessionID, providerOptions: {} })
+    expect(result.prompt_cache_key).toBe(sessionID)
+  })
+
+  test("emits prompt_cache_key when providerOptions is undefined", () => {
+    const result = ProviderTransform.options({ model: deepseekModel, sessionID, providerOptions: undefined })
+    expect(result.prompt_cache_key).toBe(sessionID)
+  })
+
+  test("excludes prompt_cache_key when setCacheKey is explicitly false", () => {
+    const result = ProviderTransform.options({
+      model: deepseekModel,
+      sessionID,
+      providerOptions: { setCacheKey: false },
+    })
+    expect(result.prompt_cache_key).toBeUndefined()
+    expect(result.promptCacheKey).toBeUndefined()
+  })
+
+  test("emits prompt_cache_key for deepseek-family models via api id alone", () => {
+    const result = ProviderTransform.options({
+      model: {
+        ...deepseekModel,
+        providerID: "custom-deepseek",
+        api: { id: "deepseek-chat", url: "https://api.deepseek.com", npm: "@ai-sdk/openai-compatible" },
+        family: "",
+      },
+      sessionID,
+      providerOptions: {},
+    })
+    expect(result.prompt_cache_key).toBe(sessionID)
+  })
+
+  test("does not set cache keys for other openai-compatible providers", () => {
+    const result = ProviderTransform.options({
+      model: {
+        ...deepseekModel,
+        providerID: "acme",
+        api: { id: "acme-1", url: "https://api.acme.com", npm: "@ai-sdk/openai-compatible" },
+        family: "",
+      },
+      sessionID,
+      providerOptions: {},
+    })
+    expect(result.prompt_cache_key).toBeUndefined()
+    expect(result.promptCacheKey).toBeUndefined()
+  })
+
+  test("keys prompt_cache_key under the provider id on the wire", () => {
+    const result = ProviderTransform.providerOptions(deepseekModel, { prompt_cache_key: sessionID })
+    expect(result.deepseek).toMatchObject({ prompt_cache_key: sessionID })
+  })
+})
+
+describe("ProviderTransform.maxOutputTokens", () => {
+  const createModel = (overrides: Partial<any> = {}) =>
+    ({
+      id: "test/test-model",
+      providerID: "test",
+      api: { id: "test-model", url: "https://api.test.com", npm: "@ai-sdk/openai" },
+      name: "Test Model",
+      capabilities: {
+        temperature: true,
+        reasoning: false,
+        attachment: false,
+        toolcall: true,
+        input: { text: true, audio: false, image: false, video: false, pdf: false },
+        output: { text: true, audio: false, image: false, video: false, pdf: false },
+        interleaved: false,
+      },
+      cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
+      limit: { context: 1_000_000, output: 384_000 },
+      status: "active",
+      options: {},
+      headers: {},
+      release_date: "2026-01-01",
+      ...overrides,
+    }) as any
+
+  const deepseek = createModel({
+    providerID: "deepseek",
+    api: { id: "deepseek-v4-flash", url: "https://api.deepseek.com", npm: "@ai-sdk/openai-compatible" },
+    family: "deepseek-flash",
+  })
+
+  test("defaults to 64k for deepseek-v4-flash family", () => {
+    expect(ProviderTransform.maxOutputTokens(deepseek)).toBe(64_000)
+  })
+
+  test("defaults to 64k when family is deepseek-flash without the v4-flash id prefix", () => {
+    const model = createModel({
+      api: { id: "deepseek-v4-pro", url: "https://api.deepseek.com", npm: "@ai-sdk/openai-compatible" },
+      family: "deepseek-flash",
+    })
+    expect(ProviderTransform.maxOutputTokens(model)).toBe(64_000)
+  })
+
+  test("model.options.outputTokenMax overrides the deepseek default", () => {
+    const model = { ...deepseek, options: { outputTokenMax: 128_000 } }
+    expect(ProviderTransform.maxOutputTokens(model)).toBe(128_000)
+  })
+
+  test("env flag still applies to deepseek when set", () => {
+    expect(ProviderTransform.maxOutputTokens(deepseek, 96_000)).toBe(96_000)
+  })
+
+  test("keeps 32k default for other providers", () => {
+    expect(ProviderTransform.maxOutputTokens(createModel())).toBe(32_000)
+  })
+
+  test("never exceeds the model output limit", () => {
+    const model = createModel({ limit: { context: 1_000_000, output: 16_000 } })
+    expect(ProviderTransform.maxOutputTokens(model)).toBe(16_000)
+    expect(ProviderTransform.maxOutputTokens(deepseek, 128_000)).toBe(128_000)
+  })
+})
+
 describe("ProviderTransform.options - zai/zhipuai thinking", () => {
   const sessionID = "test-session-123"
 
