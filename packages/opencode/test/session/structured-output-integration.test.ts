@@ -8,10 +8,17 @@ import { Session } from "@/session/session"
 import { SessionPrompt } from "../../src/session/prompt"
 import { MessageV2 } from "../../src/session/message-v2"
 import { testEffect } from "../lib/effect"
+import { InstanceBootstrap } from "../../src/project/bootstrap"
+import { InstanceStore } from "../../src/project/instance-store"
 
 // Skip tests if no API key is available
 const hasApiKey = !!process.env.ANTHROPIC_API_KEY
-const it = testEffect(AppNodeBuilder.build(LayerNode.group([SessionPrompt.node, Session.node, Ripgrep.node])))
+const it = testEffect(
+  AppNodeBuilder.build(
+    LayerNode.group([SessionPrompt.node, Session.node, Ripgrep.node]),
+    [[InstanceStore.bootstrapNode, InstanceBootstrap.node]],
+  ),
+)
 const live = hasApiKey ? it.instance : it.instance.skip
 
 describe("StructuredOutput Integration", () => {
