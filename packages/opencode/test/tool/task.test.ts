@@ -18,6 +18,7 @@ import { SessionStatus } from "@/session/status"
 import { InstanceStore } from "@/project/instance-store"
 
 import { TaskTool, type TaskPromptOps } from "../../src/tool/task"
+import { Permission } from "../../src/permission"
 import { Truncate } from "@/tool/truncate"
 import { ToolRegistry } from "@/tool/registry"
 import { RuntimeFlags } from "@/effect/runtime-flags"
@@ -61,6 +62,21 @@ const layer = (flags: Partial<RuntimeFlags.Info> = {}) =>
 
 const it = testEffect(layer())
 const background = testEffect(layer({ experimentalBackgroundSubagents: true }))
+
+const TOOL_PERMISSIONS = [
+  "bash",
+  "edit",
+  "external_directory",
+  "glob",
+  "grep",
+  "lsp",
+  "read",
+  "skill",
+  "webfetch",
+  "websearch",
+  "task",
+  "todowrite",
+]
 
 function defer<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void
@@ -593,11 +609,13 @@ describe("tool.task", () => {
     () =>
       Effect.gen(function* () {
         const sessions = yield* Session.Service
+        const agent = yield* Agent.Service
         const { chat, assistant } = yield* seed()
         const tool = yield* TaskTool
         const def = yield* tool.init()
         let seen: SessionPrompt.PromptInput | undefined
         const promptOps = stubOps({ onPrompt: (input) => (seen = input) })
+        const reviewer = yield* agent.get("reviewer")
 
         const result = yield* def.execute(
           {
@@ -620,23 +638,20 @@ describe("tool.task", () => {
         const child = yield* sessions.get(result.metadata.sessionId)
         expect(child.parentID).toBe(chat.id)
         expect(child.agent).toBe("reviewer")
-        expect(child.permission).toEqual([
-          {
-            permission: "todowrite",
-            pattern: "*",
-            action: "deny",
-          },
-          {
-            permission: "bash",
-            pattern: "*",
-            action: "deny",
-          },
-          {
-            permission: "read",
-            pattern: "*",
-            action: "deny",
-          },
-        ])
+
+        const rules = child.permission ?? []
+        const byKey = (permission: string) => rules.filter((rule) => rule.permission === permission)
+        // The reviewer may spawn tasks and resolves every tool permission
+        // deterministically via the mirrored, non-interactive ruleset.
+        const effective = Permission.merge(reviewer.permission, rules)
+        for (const key of TOOL_PERMISSIONS) {
+          expect(Permission.evaluate(key, "*", effective).action, `permission ${key}`).not.toBe("ask")
+        }
+        expect(byKey("task")).toContainEqual({ permission: "task", pattern: "*", action: "allow" })
+        // primary_tools denies and the todowrite default deny survive
+        expect(byKey("bash")).toContainEqual({ permission: "bash", pattern: "*", action: "deny" })
+        expect(byKey("read")).toContainEqual({ permission: "read", pattern: "*", action: "deny" })
+        expect(byKey("todowrite")).toContainEqual({ permission: "todowrite", pattern: "*", action: "deny" })
         expect(seen?.tools).toBeUndefined()
       }),
     {
@@ -654,6 +669,46 @@ describe("tool.task", () => {
         },
       },
     },
+  )
+
+  it.instance(
+    "child session permission never asks and allows the bug's external_directory writes",
+    () =>
+      Effect.gen(function* () {
+        const sessions = yield* Session.Service
+        const agent = yield* Agent.Service
+        const { chat, assistant } = yield* seed()
+        const tool = yield* TaskTool
+        const def = yield* tool.init()
+        const general = yield* agent.get("general")
+
+        const result = yield* def.execute(
+          {
+            description: "inspect bug",
+            prompt: "look into the cache key path",
+            subagent_type: "general",
+          },
+          {
+            sessionID: chat.id,
+            messageID: assistant.id,
+            agent: "build",
+            abort: new AbortController().signal,
+            extra: { promptOps: stubOps() },
+            messages: [],
+            metadata: () => Effect.void,
+            ask: () => Effect.void,
+          },
+        )
+
+        const child = yield* sessions.get(result.metadata.sessionId)
+        const effective = Permission.merge(general.permission, child.permission ?? [])
+        for (const key of TOOL_PERMISSIONS) {
+          expect(Permission.evaluate(key, "*", effective).action, `permission ${key}`).not.toBe("ask")
+        }
+        // the reported hang: external_directory writes must resolve, not block
+        expect(Permission.evaluate("external_directory", "/tmp/foo/*", effective).action).toBe("allow")
+        expect(Permission.evaluate("task", "*", effective).action).toBe("deny")
+      }),
   )
 
   it.instance("rejects background execution when the experiment is disabled", () =>
