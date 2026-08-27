@@ -9,9 +9,9 @@ import { ProjectTable } from "@opencode-ai/core/project/sql"
 import type { ProjectV2 } from "@opencode-ai/core/project"
 import { Slug } from "@opencode-ai/core/util/slug"
 import { errorMessage } from "../util/error"
-import { GlobalBus } from "@/bus/global"
+import { GlobalBus, type GlobalEvent } from "@/bus/global"
 import { Git } from "@/git"
-import { Effect, Layer, Path, Schema, Scope, Context } from "effect"
+import { Deferred, Effect, Layer, Path, Schema, Scope, Context } from "effect"
 import { ChildProcess } from "effect/unstable/process"
 import { FSUtil } from "@opencode-ai/core/fs-util"
 import { AppProcess } from "@opencode-ai/core/process"
@@ -111,6 +111,34 @@ function failedRemoves(...chunks: string[]) {
       }),
   )
 }
+
+export const waitReady = Effect.fn("Worktree.waitReady")(function* (directory: string) {
+  const ready = yield* Deferred.make<{ name: string; branch?: string }, globalThis.Error>()
+  const on = (evt: GlobalEvent) => {
+    if (evt.directory !== directory) return
+    if (evt.payload.type === Event.Ready.type) {
+      Deferred.doneUnsafe(ready, Effect.succeed(evt.payload.properties))
+    }
+    if (evt.payload.type === Event.Failed.type) {
+      Deferred.doneUnsafe(ready, Effect.fail(new Error(evt.payload.properties.message)))
+    }
+  }
+
+  return yield* Effect.acquireUseRelease(
+    Effect.sync(() => {
+      GlobalBus.on("event", on)
+      return () => GlobalBus.off("event", on)
+    }),
+    () =>
+      Deferred.await(ready).pipe(
+        Effect.timeoutOrElse({
+          duration: "30 seconds",
+          orElse: () => Effect.fail(new Error(`Timed out waiting for worktree to boot: ${directory}`)),
+        }),
+      ),
+    (off) => Effect.sync(off),
+  )
+})
 
 // ---------------------------------------------------------------------------
 // Effect service

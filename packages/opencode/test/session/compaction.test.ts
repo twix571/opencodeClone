@@ -545,6 +545,39 @@ describe("session.compaction.isOverflow", () => {
   )
 
   it.live(
+    "scales the compaction reserve with context for large-context models",
+    provideTmpdirInstance(() =>
+      Effect.gen(function* () {
+        const compact = yield* SessionCompaction.Service
+        const model = {
+          ...createModel({ context: 2_000_000, input: 2_000_000, output: 384_000 }),
+          family: "deepseek-flash",
+          api: { id: "deepseek-v4-flash", url: "https://api.deepseek.com", npm: "@ai-sdk/openai-compatible" },
+        } as Provider.Model
+        // buffer = max(20k, round(2M * 0.02)) = 40k; reserved = min(40k, 64k) = 40k
+        // usable = 2M - 40k = 1_960_000. With the legacy 20k reserve this
+        // count (1_965_000) would NOT overflow.
+        const tokens = { input: 1_965_000, output: 1_000, reasoning: 0, cache: { read: 0, write: 0 } }
+        expect(yield* compact.isOverflow({ tokens, model })).toBe(true)
+      }),
+    ),
+  )
+
+  it.live(
+    "keeps the reserve below the output cap for non-deepseek models",
+    provideTmpdirInstance(() =>
+      Effect.gen(function* () {
+        const compact = yield* SessionCompaction.Service
+        const model = createModel({ context: 2_000_000, input: 2_000_000, output: 384_000 })
+        // buffer scales to 40k but maxOutputTokens caps the reserve at 32k:
+        // usable = 2M - 32k = 1_968_000, so 1_965_000 is still usable.
+        const tokens = { input: 1_965_000, output: 1_000, reasoning: 0, cache: { read: 0, write: 0 } }
+        expect(yield* compact.isOverflow({ tokens, model })).toBe(false)
+      }),
+    ),
+  )
+
+  it.live(
     "returns false when compaction.auto is disabled",
     provideTmpdirInstance(
       () =>
@@ -959,6 +992,66 @@ describe("session.compaction.process", () => {
       expect(part?.type).toBe("compaction")
       expect(part?.tail_start_id).toBe(keep.id)
     }).pipe(withCompaction({ config: cfg({ tail_turns: 2, preserve_recent_tokens: 10_000 }) })),
+  )
+
+  itCompaction.instance(
+    "retains all recent turns for large-context models",
+    Effect.gen(function* () {
+      const ssn = yield* SessionNs.Service
+      const session = yield* ssn.create({})
+      yield* createUserMessage(session.id, "x".repeat(30_000))
+      yield* createUserMessage(session.id, "y".repeat(30_000))
+      yield* createUserMessage(session.id, "z".repeat(30_000))
+      yield* createSummaryCompaction(session.id)
+
+      const msgs = yield* ssn.messages({ sessionID: session.id })
+      const parent = msgs.at(-1)?.info.id
+      expect(parent).toBeTruthy()
+      yield* SessionCompaction.use.process({
+        parentID: parent!,
+        messages: msgs,
+        sessionID: session.id,
+        auto: false,
+      })
+
+      // 3 turns of ~7.5k tokens each fit inside the 40k large-context clamp,
+      // so the whole session is retained and no tail is cut.
+      const part = yield* readCompactionPart(session.id)
+      expect(part?.type).toBe("compaction")
+      expect(part?.tail_start_id).toBeUndefined()
+    }).pipe(
+      withCompaction({
+        provider: ProviderTest.fake({ model: createModel({ context: 400_000, output: 32_000 }) }),
+      }),
+    ),
+  )
+
+  itCompaction.instance(
+    "clamps retained recent turns to 15k for small-context models",
+    Effect.gen(function* () {
+      const ssn = yield* SessionNs.Service
+      const session = yield* ssn.create({})
+      yield* createUserMessage(session.id, "a".repeat(30_000))
+      yield* createUserMessage(session.id, "b".repeat(30_000))
+      const keep = yield* createUserMessage(session.id, "c".repeat(30_000))
+      yield* createSummaryCompaction(session.id)
+
+      const msgs = yield* ssn.messages({ sessionID: session.id })
+      const parent = msgs.at(-1)?.info.id
+      expect(parent).toBeTruthy()
+      yield* SessionCompaction.use.process({
+        parentID: parent!,
+        messages: msgs,
+        sessionID: session.id,
+        auto: false,
+      })
+
+      // usable(100k) * 0.25 = 17k, clamped to the 15k ceiling: only the last
+      // ~7.5k-token turn fits, so the tail starts at the third turn.
+      const part = yield* readCompactionPart(session.id)
+      expect(part?.type).toBe("compaction")
+      expect(part?.tail_start_id).toBe(keep.id)
+    }).pipe(withCompaction({ config: cfg({}) })),
   )
 
   itCompaction.instance(
@@ -1780,6 +1873,22 @@ describe("SessionNs.getUsage", () => {
     expect(result.tokens.cache.read).toBe(0)
     expect(result.tokens.cache.write).toBe(0)
     expect(Number.isNaN(result.cost)).toBe(false)
+  })
+
+  test("ignores malformed cost fields", () => {
+    const model = createModel({
+      context: 100_000,
+      output: 32_000,
+      cost: { input: 3, output: 15, cache: { read: 0.3, write: 3.75 } },
+    })
+    Object.assign(model.cost, { input: {} })
+
+    const result = SessionNs.getUsage({
+      model,
+      usage: usage({ inputTokens: 1_000_000, outputTokens: 100_000, totalTokens: 1_100_000 }),
+    })
+
+    expect(result.cost).toBe(1.5)
   })
 
   test("calculates cost correctly", () => {

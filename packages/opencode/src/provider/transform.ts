@@ -16,6 +16,18 @@ function mimeToModality(mime: string): Modality | undefined {
 }
 
 export const OUTPUT_TOKEN_MAX = 32_000
+export const DEEPSEEK_V4_FLASH_OUTPUT_TOKEN_MAX = 64_000
+
+export function isDeepseekV4Flash(model: Provider.Model) {
+  const id = (model.api.id ?? "").toLowerCase()
+  if (id.startsWith("deepseek-v4-flash")) return true
+  const family = (model.family ?? "").toLowerCase()
+  return family === "deepseek-flash" || family === "deepseek flash"
+}
+
+export function isDeepseekFamily(model: Provider.Model) {
+  return (model.api.id ?? "").toLowerCase().includes("deepseek") || isDeepseekV4Flash(model)
+}
 
 // OpenAI Responses `include` value that returns the encrypted reasoning state
 // needed for stateless multi-turn reasoning (store: false). Hoisted so every
@@ -528,7 +540,6 @@ const GEMINI_MODELS_WITH_SAMPLING_DEFAULTS = [
 export function temperature(model: Provider.Model) {
   const id = model.api.id.toLowerCase()
   if (id.includes("north-mini-code")) return 1.0
-  if (id.includes("qwen")) return 0.55
   if (id.includes("claude")) return undefined
   if (id.includes("gemini"))
     return GEMINI_MODELS_WITH_SAMPLING_DEFAULTS.some((model) => model.test(id)) ? 1.0 : undefined
@@ -547,7 +558,6 @@ export function temperature(model: Provider.Model) {
 
 export function topP(model: Provider.Model) {
   const id = model.api.id.toLowerCase()
-  if (id.includes("qwen")) return 1
   if (id.includes("gemini"))
     return GEMINI_MODELS_WITH_SAMPLING_DEFAULTS.some((model) => model.test(id)) ? 0.95 : undefined
   if (["minimax-m2", "kimi-k2.5", "kimi-k2p5", "kimi-k2-5"].some((s) => id.includes(s))) {
@@ -1262,6 +1272,13 @@ export function options(input: {
   if (input.providerOptions?.setCacheKey !== false) {
     if (input.model.api.npm === "@ai-sdk/deepinfra" || input.model.api.npm === "@ai-sdk/cerebras") {
       result["prompt_cache_key"] = input.sessionID
+    } else if (input.model.api.npm === "@ai-sdk/openai-compatible" && isDeepseekFamily(input.model)) {
+      // DeepSeek's OpenAI-compatible API keys prompt caching by an explicit
+      // beta `prompt_cache_key` body param (automatic prefix caching remains
+      // server-side). @ai-sdk/openai-compatible spreads unknown provider
+      // options straight into the body, so snake_case is the wire format —
+      // the same mechanism deepinfra/cerebras already use.
+      result["prompt_cache_key"] = input.sessionID
     } else if (
       input.model.api.npm === "@ai-sdk/openai" ||
       input.model.api.npm === "@ai-sdk/azure" ||
@@ -1305,13 +1322,13 @@ export function options(input: {
       }
     }
 
-    // Only set textVerbosity for non-chat gpt-5.x models
-    // Chat models (e.g. gpt-5.2-chat-latest) only support "medium" verbosity
+    // Generic OpenAI-compatible APIs do not necessarily support OpenAI's verbosity parameter.
+    // Only enable the default for integrations known to implement it.
     if (
       input.model.api.id.includes("gpt-5.") &&
       !input.model.api.id.includes("codex") &&
       !input.model.api.id.includes("-chat") &&
-      input.model.providerID !== "azure"
+      (input.model.api.npm === "@ai-sdk/openai" || input.model.api.npm === "@ai-sdk/amazon-bedrock/mantle")
     ) {
       result["textVerbosity"] = "low"
     }
@@ -1417,8 +1434,12 @@ export function providerOptions(model: Provider.Model, options: { [x: string]: a
   return { [key]: normalized }
 }
 
-export function maxOutputTokens(model: Provider.Model, outputTokenMax = OUTPUT_TOKEN_MAX): number {
-  return Math.min(model.limit.output, outputTokenMax) || outputTokenMax
+export function maxOutputTokens(model: Provider.Model, outputTokenMax?: number): number {
+  const cap =
+    model.options.outputTokenMax ??
+    outputTokenMax ??
+    (isDeepseekV4Flash(model) ? DEEPSEEK_V4_FLASH_OUTPUT_TOKEN_MAX : OUTPUT_TOKEN_MAX)
+  return Math.min(model.limit.output, cap) || cap
 }
 
 type JsonRecord = Record<string, unknown>
