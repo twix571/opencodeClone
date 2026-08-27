@@ -23,6 +23,8 @@ import { ProviderV2 } from "@opencode-ai/core/provider"
 import { Effect, Layer, Scope } from "effect"
 import fs from "fs/promises"
 import path from "path"
+import { InstanceBootstrap } from "@/project/bootstrap"
+import { InstanceStore } from "@/project/instance-store"
 import { LSP } from "../src/lsp/lsp"
 import { MCP } from "../src/mcp"
 import { RuntimeFlags } from "@/effect/runtime-flags"
@@ -157,6 +159,7 @@ const env = LayerNode.compile(root, [
   [LSP.node, lsp],
   [SessionSummary.node, summary],
   [RuntimeFlags.node, RuntimeFlags.layer({ experimentalEventSystem: true })],
+  [InstanceStore.bootstrapNode, InstanceBootstrap.node],
 ])
 
 const ALLOW = [{ permission: "*" as const, pattern: "*" as const, action: "allow" as const }]
