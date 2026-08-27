@@ -104,4 +104,30 @@ describe("tool.worktree", () => {
       }),
     { git: true },
   )
+
+  it.instance(
+    "delete removes a clean worktree without treating 'nothing to commit' as an error",
+    () =>
+      Effect.gen(function* () {
+        const test = yield* TestInstance
+        const tool = yield* WorktreeCreateTool
+        const def = yield* tool.init()
+        const created = yield* def.execute({ name: "clean-remove" }, ctx)
+
+        const directory = created.output.match(/Directory: (.+)/)?.[1]
+        if (!directory) throw new Error("expected directory in output")
+
+        const del = yield* WorktreeDeleteTool
+        const delDef = yield* del.init()
+        const result = yield* delDef.execute({ directory, reason: "cleanup test work" }, ctx)
+
+        expect(result.output).toContain("Deleted worktree")
+        expect(yield* Effect.promise(() => fs.access(directory).then(() => true).catch(() => false))).toBe(false)
+
+        const svc = yield* Worktree.Service
+        const list = yield* svc.list()
+        expect(list).not.toContainEqual(expect.objectContaining({ name: "clean-remove" }))
+      }),
+    { git: true },
+  )
 })

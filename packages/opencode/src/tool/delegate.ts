@@ -48,6 +48,13 @@ const UPDATED = [
   "Work on non-overlapping tasks, or briefly tell the user what you sent and end your response.",
 ].join("\n")
 
+const WORKTREE_ORCHESTRATION_GUARD = [
+  "",
+  "IMPORTANT — orchestration contract: You are running inside an isolated git worktree managed by your parent session.",
+  "Do NOT call worktree_create or worktree_delete. Do NOT merge or push branches. Do NOT remove your working directory.",
+  "Just do the task, verify your work, and report your final result. Your parent merges your branch and handles cleanup.",
+].join("\n")
+
 export const DelegateTool = Tool.define(
   id,
   Effect.gen(function* () {
@@ -134,13 +141,14 @@ export const DelegateTool = Tool.define(
       })
 
       const runTask = Effect.fn("DelegateTool.runTask")(function* () {
+        const childPrompt = created ? `${params.prompt}${WORKTREE_ORCHESTRATION_GUARD}` : params.prompt
         const child = runTaskPrompt({
           ops,
           sessionID: nextSession.id,
           model,
           variant: next.model ? undefined : variant,
           agent: next.name,
-          prompt: params.prompt,
+          prompt: childPrompt,
           description: params.description,
         })
         const result = yield* (created ? store.provide({ directory: created.directory }, child) : child)

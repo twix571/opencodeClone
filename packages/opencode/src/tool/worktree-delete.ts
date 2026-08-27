@@ -36,7 +36,11 @@ export const WorktreeDeleteTool = Tool.define(
         )
       }
       const commit = yield* git.run(["commit", "-m", params.reason], { cwd: params.directory })
-      if (commit.exitCode !== 0 && !/nothing to commit/i.test(commit.stderr.toString("utf8"))) {
+      const nothingToCommit =
+        commit.exitCode !== 0 &&
+        (/nothing to commit/i.test(commit.stderr.toString("utf8")) ||
+          /nothing to commit/i.test(commit.stdout.toString("utf8")))
+      if (commit.exitCode !== 0 && !nothingToCommit) {
         return yield* Effect.fail(
           new Error(`git commit failed in ${params.directory}: ${commit.stderr.toString("utf8")}`),
         )
