@@ -131,7 +131,10 @@ function truncate(value: string, len: number) {
 
 function fmtModel(model: unknown) {
   if (!model) return "-"
-  const m = typeof model === "string" ? (JSON.parse(model) as { id?: string; providerID?: string }) : (model as { id?: string; providerID?: string })
+  const m =
+    typeof model === "string"
+      ? (JSON.parse(model) as { id?: string; providerID?: string })
+      : (model as { id?: string; providerID?: string })
   return `${m.providerID ?? "?"}/${m.id ?? "?"}`
 }
 
@@ -246,7 +249,7 @@ function renderSession(db: Database, id: string, opts: GetOpts, depth = 0) {
   let rows = db
     .query("SELECT id, data FROM message WHERE session_id = ? ORDER BY time_created ASC, id ASC")
     .all(id) as unknown as Array<{ id: string; data: unknown }>
-  rows = rows.filter((m) => (parseJson(m.data) as MsgData).role === (opts.role ?? (parseJson(m.data) as MsgData).role))
+  if (opts.role) rows = rows.filter((m) => (parseJson(m.data) as MsgData).role === opts.role)
   if (opts.last) rows = rows.slice(-opts.last)
   const partRows = db
     .query("SELECT message_id, data FROM part WHERE session_id = ? ORDER BY message_id ASC, id ASC")
