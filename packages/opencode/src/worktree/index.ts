@@ -275,6 +275,8 @@ const layer: Layer.Layer<
         return
       }
 
+      yield* provisionNodeModules(info.directory)
+
       const booted = yield* store.load({ directory: info.directory }).pipe(
         Effect.as(true),
         Effect.catch((error) =>
@@ -326,6 +328,46 @@ const layer: Layer.Layer<
       const normalized = pathSvc.normalize(real)
       return process.platform === "win32" ? normalized.toLowerCase() : normalized
     })
+
+    const provisionNodeModules = Effect.fnUntraced(
+      function* (directory: string) {
+        const ctx = yield* InstanceState.context
+        const worktree = yield* canonical(ctx.worktree)
+        const sourceRoot = pathSvc.join(ctx.worktree, "node_modules")
+        const target = pathSvc.join(directory, "node_modules")
+        if (yield* fs.exists(target).pipe(Effect.orElseSucceed(() => false))) return
+        if (yield* fs.exists(sourceRoot).pipe(Effect.orElseSucceed(() => false))) return
+        yield* fs.makeDirectory(target, { recursive: true })
+        const entries = yield* fs.readDirectoryEntries(sourceRoot)
+        yield* Effect.forEach(entries, (entry) =>
+          Effect.gen(function* () {
+            if (!entry.name.startsWith("@")) {
+              yield* fs.symlink(pathSvc.join(sourceRoot, entry.name), pathSvc.join(target, entry.name))
+              return
+            }
+            const scopeSource = pathSvc.join(sourceRoot, entry.name)
+            const scopeTarget = pathSvc.join(target, entry.name)
+            yield* fs.makeDirectory(scopeTarget, { recursive: true })
+            const packages = yield* fs.readDirectoryEntries(scopeSource)
+            yield* Effect.forEach(packages, (pkg) =>
+              Effect.gen(function* () {
+                const real = yield* canonical(pathSvc.join(scopeSource, pkg.name))
+                const link = FSUtil.contains(worktree, real)
+                  ? pathSvc.join(directory, pathSvc.relative(worktree, real))
+                  : pathSvc.join(scopeSource, pkg.name)
+                yield* fs.symlink(link, pathSvc.join(scopeTarget, pkg.name))
+              }),
+            )
+          }),
+        )
+      },
+      (effect, directory: string) =>
+        effect.pipe(
+          Effect.catch((error) =>
+            Effect.logWarning("worktree node_modules provision failed", { directory, message: errorMessage(error) }),
+          ),
+        ),
+    )
 
     function parseWorktreeList(text: string) {
       return text
@@ -602,6 +644,8 @@ const layer: Layer.Layer<
           message: cleanResult.stderr || cleanResult.text || "Failed to clean worktree",
         })
       }
+
+      yield* provisionNodeModules(worktreePath)
 
       yield* gitExpect(
         ["submodule", "update", "--init", "--recursive", "--force"],
