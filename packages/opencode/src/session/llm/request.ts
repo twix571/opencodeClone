@@ -170,6 +170,9 @@ export const prepare = Effect.fn("LLMRequestPrep.prepare")(function* (input: Pre
           reason: { type: "string", description: "Unused" },
         },
       }),
+      toModelOutput({ output }) {
+        return { type: "text", value: (output as { output?: string }).output ?? "" }
+      },
       execute: async () => ({ output: "", title: "", metadata: {} }),
     })
   }
