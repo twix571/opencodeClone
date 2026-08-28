@@ -53,6 +53,7 @@ const WORKTREE_ORCHESTRATION_GUARD = [
   "IMPORTANT — orchestration contract: You are running inside an isolated git worktree managed by your parent session.",
   "Do NOT call worktree_create or worktree_delete. Do NOT merge or push branches. Do NOT remove your working directory.",
   "Just do the task, verify your work, and report your final result. Your parent merges your branch and handles cleanup.",
+  "If you add a dependency to package.json, run bun install --frozen-lockfile in the worktree before typechecking.",
 ].join("\n")
 
 export const DelegateTool = Tool.define(
