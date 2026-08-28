@@ -12,6 +12,22 @@
 - Capture the current TUI output with: `tmux capture-pane -pt opencode-dev`.
 - Stop the session explicitly when done: `tmux kill-session -t opencode-dev`.
 
+## Session inspection
+
+Read recent sessions and dump conversations without digging through the SQLite
+databases directly. From `packages/opencode`:
+
+- `bun run sessions list --dir <path>` — recent sessions for a directory across
+  all opencode DBs (title, agent, model, cost, parent/child links).
+- `bun run sessions get <sessionID> [--last N] [--role user|assistant] [--children]` —
+  dump a conversation as markdown. `--role user` skims just the prompts;
+  `--children` includes subagent sessions. Reasoning is omitted and tool output
+  truncated (800 chars) by default to keep context small.
+- `bun run sessions dbs` — list the SQLite DBs and their session counts.
+
+The tool (`script/sessions.ts`) opens the DBs read-only and never writes.
+Prefer it over hand-querying `~/.local/share/opencode/opencode*.db`.
+
 # Module shape
 
 Do not use `export namespace Foo { ... }` for module organization. It is not
