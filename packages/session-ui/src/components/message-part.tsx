@@ -1999,6 +1999,17 @@ ToolRegistry.register({
       return value
     })
     const running = createMemo(() => props.status === "pending" || props.status === "running")
+    const childStatus = createMemo(() => {
+      const id = childSessionId()
+      if (!id) return undefined
+      return data.store.session_status[id]
+    })
+    const working = createMemo(() => {
+      if (!running()) return false
+      const status = childStatus()
+      if (!status) return true
+      return status.type !== "idle"
+    })
 
     const href = createMemo(() => sessionLink(childSessionId(), data.sessionHref))
     const clickable = createMemo(() => !!(childSessionId() && (data.navigateToSession || href())))
@@ -2043,11 +2054,17 @@ ToolRegistry.register({
                   </Show>
                 }
               >
-                <span data-component="task-tool-spinner" style={{ color: tone() ?? "var(--icon-interactive-base)" }}>
-                  <Show when={newLayout()} fallback={<Spinner />}>
-                    <SessionProgressIndicatorV2
-                      style={{ color: v2Tone() ?? "light-dark(var(--v2-text-text-base), #ffffff)" }}
-                    />
+                <span
+                  data-component="task-tool-spinner"
+                  data-state={working() ? undefined : "idle"}
+                  style={working() ? { color: tone() ?? "var(--icon-interactive-base)" } : undefined}
+                >
+                  <Show when={working()} fallback={<span title={i18n.t("ui.messagePart.task.idle")} aria-label={i18n.t("ui.messagePart.task.idle")}><Icon name="pause" size="small" /></span>}>
+                    <Show when={newLayout()} fallback={<Spinner />}>
+                      <SessionProgressIndicatorV2
+                        style={{ color: v2Tone() ?? "light-dark(var(--v2-text-text-base), #ffffff)" }}
+                      />
+                    </Show>
                   </Show>
                 </span>
               </Show>

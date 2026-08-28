@@ -70,6 +70,7 @@ const names = [
   "task",
   "subagent",
   "stop",
+  "pause",
   "layout-left",
   "layout-left-partial",
   "layout-left-full",
