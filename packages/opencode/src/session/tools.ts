@@ -99,6 +99,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
     tools[item.id] = tool({
       description: item.description,
       inputSchema: jsonSchema(schema),
+      toModelOutput: projectToolOutput,
       execute(args, options) {
         return run.promise(
           Effect.gen(function* () {
@@ -152,6 +153,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
           additionalProperties: false,
         }),
       ),
+      toModelOutput: projectToolOutput,
       execute(args, opts) {
         return run.promise(
           Effect.gen(function* () {
@@ -235,6 +237,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
           additionalProperties: false,
         }),
       ),
+      toModelOutput: projectToolOutput,
       execute(args, opts) {
         return run.promise(
           Effect.gen(function* () {
@@ -322,6 +325,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
           additionalProperties: false,
         }),
       ),
+      toModelOutput: projectToolOutput,
       execute(args, opts) {
         return run.promise(
           Effect.gen(function* () {
@@ -395,6 +399,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
     const schema = yield* Effect.promise(() => Promise.resolve(asSchema(item.inputSchema).jsonSchema))
     const transformed = ProviderTransform.schema(input.model, { ...schema, properties: schema.properties ?? {} })
     item.inputSchema = jsonSchema(transformed)
+    item.toModelOutput = projectToolOutput
     item.execute = (args, opts) =>
       run.promise(
         Effect.gen(function* () {
@@ -585,6 +590,33 @@ function formatBytes(value: number) {
   if (value < 1024) return `${value} B`
   if (value < 1024 * 1024) return `${Math.ceil(value / 1024)} KB`
   return `${Math.ceil(value / (1024 * 1024))} MB`
+}
+
+const projectToolOutput: NonNullable<AITool["toModelOutput"]> = ({ output }) => {
+  if (typeof output === "string") return { type: "text", value: output }
+  if (typeof output === "object") {
+    const result = output as { output?: string; attachments?: Array<{ mime: string; url: string }> }
+    const attachments = (result.attachments ?? []).filter(
+      (attachment) => attachment.url.startsWith("data:") && attachment.url.includes(","),
+    )
+    if (attachments.length === 0) {
+      return typeof result.output === "string"
+        ? { type: "text", value: result.output }
+        : { type: "json", value: output }
+    }
+    return {
+      type: "content",
+      value: [
+        ...(typeof result.output === "string" ? [{ type: "text" as const, text: result.output }] : []),
+        ...attachments.map((attachment) => ({
+          type: "media" as const,
+          mediaType: attachment.mime,
+          data: attachment.url.slice(attachment.url.indexOf(",") + 1),
+        })),
+      ],
+    }
+  }
+  return { type: "json", value: output }
 }
 
 export * as SessionTools from "./tools"

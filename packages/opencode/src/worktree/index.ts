@@ -9,9 +9,9 @@ import { ProjectTable } from "@opencode-ai/core/project/sql"
 import type { ProjectV2 } from "@opencode-ai/core/project"
 import { Slug } from "@opencode-ai/core/util/slug"
 import { errorMessage } from "../util/error"
-import { GlobalBus } from "@/bus/global"
+import { GlobalBus, type GlobalEvent } from "@/bus/global"
 import { Git } from "@/git"
-import { Effect, Layer, Path, Schema, Scope, Context } from "effect"
+import { Deferred, Effect, Layer, Path, Schema, Scope, Context } from "effect"
 import { ChildProcess } from "effect/unstable/process"
 import { FSUtil } from "@opencode-ai/core/fs-util"
 import { AppProcess } from "@opencode-ai/core/process"
@@ -111,6 +111,34 @@ function failedRemoves(...chunks: string[]) {
       }),
   )
 }
+
+export const waitReady = Effect.fn("Worktree.waitReady")(function* (directory: string) {
+  const ready = yield* Deferred.make<{ name: string; branch?: string }, globalThis.Error>()
+  const on = (evt: GlobalEvent) => {
+    if (evt.directory !== directory) return
+    if (evt.payload.type === Event.Ready.type) {
+      Deferred.doneUnsafe(ready, Effect.succeed(evt.payload.properties))
+    }
+    if (evt.payload.type === Event.Failed.type) {
+      Deferred.doneUnsafe(ready, Effect.fail(new Error(evt.payload.properties.message)))
+    }
+  }
+
+  return yield* Effect.acquireUseRelease(
+    Effect.sync(() => {
+      GlobalBus.on("event", on)
+      return () => GlobalBus.off("event", on)
+    }),
+    () =>
+      Deferred.await(ready).pipe(
+        Effect.timeoutOrElse({
+          duration: "30 seconds",
+          orElse: () => Effect.fail(new Error(`Timed out waiting for worktree to boot: ${directory}`)),
+        }),
+      ),
+    (off) => Effect.sync(off),
+  )
+})
 
 // ---------------------------------------------------------------------------
 // Effect service
@@ -247,6 +275,8 @@ const layer: Layer.Layer<
         return
       }
 
+      yield* provisionNodeModules(info.directory)
+
       const booted = yield* store.load({ directory: info.directory }).pipe(
         Effect.as(true),
         Effect.catch((error) =>
@@ -298,6 +328,46 @@ const layer: Layer.Layer<
       const normalized = pathSvc.normalize(real)
       return process.platform === "win32" ? normalized.toLowerCase() : normalized
     })
+
+    const provisionNodeModules = Effect.fnUntraced(
+      function* (directory: string) {
+        const ctx = yield* InstanceState.context
+        const worktree = yield* canonical(ctx.worktree)
+        const sourceRoot = pathSvc.join(ctx.worktree, "node_modules")
+        const target = pathSvc.join(directory, "node_modules")
+        if (yield* fs.exists(target).pipe(Effect.orElseSucceed(() => false))) return
+        if (yield* fs.exists(sourceRoot).pipe(Effect.orElseSucceed(() => false))) return
+        yield* fs.makeDirectory(target, { recursive: true })
+        const entries = yield* fs.readDirectoryEntries(sourceRoot)
+        yield* Effect.forEach(entries, (entry) =>
+          Effect.gen(function* () {
+            if (!entry.name.startsWith("@")) {
+              yield* fs.symlink(pathSvc.join(sourceRoot, entry.name), pathSvc.join(target, entry.name))
+              return
+            }
+            const scopeSource = pathSvc.join(sourceRoot, entry.name)
+            const scopeTarget = pathSvc.join(target, entry.name)
+            yield* fs.makeDirectory(scopeTarget, { recursive: true })
+            const packages = yield* fs.readDirectoryEntries(scopeSource)
+            yield* Effect.forEach(packages, (pkg) =>
+              Effect.gen(function* () {
+                const real = yield* canonical(pathSvc.join(scopeSource, pkg.name))
+                const link = FSUtil.contains(worktree, real)
+                  ? pathSvc.join(directory, pathSvc.relative(worktree, real))
+                  : pathSvc.join(scopeSource, pkg.name)
+                yield* fs.symlink(link, pathSvc.join(scopeTarget, pkg.name))
+              }),
+            )
+          }),
+        )
+      },
+      (effect, directory: string) =>
+        effect.pipe(
+          Effect.catch((error) =>
+            Effect.logWarning("worktree node_modules provision failed", { directory, message: errorMessage(error) }),
+          ),
+        ),
+    )
 
     function parseWorktreeList(text: string) {
       return text
@@ -574,6 +644,8 @@ const layer: Layer.Layer<
           message: cleanResult.stderr || cleanResult.text || "Failed to clean worktree",
         })
       }
+
+      yield* provisionNodeModules(worktreePath)
 
       yield* gitExpect(
         ["submodule", "update", "--init", "--recursive", "--force"],

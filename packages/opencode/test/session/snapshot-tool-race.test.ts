@@ -31,6 +31,8 @@ import { LSP } from "@/lsp/lsp"
 import { MCP } from "../../src/mcp"
 import { CrossSpawnSpawner } from "@opencode-ai/core/cross-spawn-spawner"
 import { RuntimeFlags } from "@/effect/runtime-flags"
+import { InstanceBootstrap } from "../../src/project/bootstrap"
+import { InstanceStore } from "../../src/project/instance-store"
 
 const mcp = Layer.succeed(
   MCP.Service,
@@ -88,6 +90,7 @@ const root = LayerNode.group([
 ])
 const it = testEffect(
   LayerNode.compile(root, [
+    [InstanceStore.bootstrapNode, InstanceBootstrap.node],
     [MCP.node, mcp],
     [LSP.node, lsp],
     [RuntimeFlags.node, RuntimeFlags.layer({ experimentalEventSystem: true })],

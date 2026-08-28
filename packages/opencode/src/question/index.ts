@@ -5,6 +5,7 @@ import { SessionID } from "@/session/schema"
 import { QuestionID } from "./schema"
 import { EventV2Bridge } from "@/event-v2-bridge"
 import { QuestionV1 } from "@opencode-ai/schema/question-v1"
+import { EventV2 } from "@opencode-ai/core/event"
 
 export const Option = QuestionV1.Option
 export type Option = typeof Option.Type
@@ -37,6 +38,7 @@ export class NotFoundError extends Schema.TaggedErrorClass<NotFoundError>()("Que
 interface PendingEntry {
   info: Request
   deferred: Deferred.Deferred<ReadonlyArray<Answer>, RejectedError>
+  ready: boolean
 }
 
 interface State {
@@ -60,6 +62,13 @@ export interface Interface {
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/Question") {}
+
+const publishNext = Effect.fn("Question.publishNext")(function* (events: EventV2.Interface, pending: State["pending"]) {
+  const next = Array.from(pending.values()).find((item) => !item.ready)
+  if (!next) return yield* Effect.void
+  next.ready = true
+  yield* events.publish(Event.Asked, next.info)
+})
 
 const layer = Layer.effect(
   Service,
@@ -100,8 +109,13 @@ const layer = Layer.effect(
         questions: input.questions,
         tool: input.tool,
       }
-      pending.set(id, { info, deferred })
-      yield* events.publish(Event.Asked, info)
+      const ready = !Array.from(pending.values()).some((item) => item.ready)
+      pending.set(id, { info, deferred, ready })
+      if (ready) {
+        yield* events.publish(Event.Asked, info)
+      } else {
+        yield* Effect.logInfo("queued question behind another pending one", { id, questions: input.questions.length })
+      }
 
       return yield* Effect.ensuring(
         Deferred.await(deferred),
@@ -129,6 +143,7 @@ const layer = Layer.effect(
         answers: input.answers.map((a) => [...a]),
       })
       yield* Deferred.succeed(existing.deferred, input.answers)
+      yield* publishNext(events, pending)
     })
 
     const reject = Effect.fn("Question.reject")(function* (requestID: QuestionID) {
@@ -145,11 +160,14 @@ const layer = Layer.effect(
         requestID: existing.info.id,
       })
       yield* Deferred.fail(existing.deferred, new RejectedError())
+      yield* publishNext(events, pending)
     })
 
     const list = Effect.fn("Question.list")(function* () {
       const pending = (yield* InstanceState.get(state)).pending
-      return Array.from(pending.values(), (x) => x.info)
+      return Array.from(pending.values())
+        .filter((x) => x.ready)
+        .map((x) => x.info)
     })
 
     return Service.of({ ask, reply, reject, list })
