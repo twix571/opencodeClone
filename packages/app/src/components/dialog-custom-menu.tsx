@@ -41,7 +41,7 @@ export const DialogCustomMenu: Component<{ defaultValue?: string }> = (props) =>
   }
 
   return (
-    <Dialog size="x-large" transition>
+    <Dialog size="full" transition>
       <Tabs
         orientation="vertical"
         variant="settings"
@@ -53,9 +53,13 @@ export const DialogCustomMenu: Component<{ defaultValue?: string }> = (props) =>
           <div class="flex flex-col justify-between h-full w-full gap-4">
             <div class="flex flex-col gap-3 w-full pt-3">
               <div class="flex flex-col gap-1.5 w-full">
-                <Tabs.Trigger value="custom">
-                  <Icon name="plus" />
-                  {language.t("customMenu.tab.custom")}
+                <Tabs.Trigger value="context">
+                  <Icon name="prompt" />
+                  {language.t("settings.tab.context")}
+                </Tabs.Trigger>
+                <Tabs.Trigger value="actions">
+                  <Icon name="task" />
+                  {language.t("customMenu.tab.actions")}
                 </Tabs.Trigger>
               </div>
 
@@ -107,9 +111,10 @@ export const DialogCustomMenu: Component<{ defaultValue?: string }> = (props) =>
             </div>
           </div>
         </Tabs.List>
-        <Tabs.Content value="custom" class="no-scrollbar">
+        <Tabs.Content value="context" class="no-scrollbar">
           <SettingsContextV2 directory={directory} />
         </Tabs.Content>
+        <Tabs.Content value="actions" class="no-scrollbar" />
         <Tabs.Content value="general" class="no-scrollbar">
           <SettingsGeneral />
         </Tabs.Content>

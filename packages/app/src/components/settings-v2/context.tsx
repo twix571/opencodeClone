@@ -29,6 +29,8 @@ type ContextSource = {
   content: string
 }
 
+const AUTO_PROJECT = "__auto__"
+
 export const SettingsContextV2: Component<{ directory: Accessor<string | undefined> }> = (props) => {
   const language = useLanguage()
   const serverSdk = useServerSDK()
@@ -41,8 +43,21 @@ export const SettingsContextV2: Component<{ directory: Accessor<string | undefin
     return project?.worktree ? { directory: project.worktree } : undefined
   })
 
+  const [selectedProject, setSelectedProject] = createSignal<string | undefined>()
+  const effectiveLocation = createMemo(() => {
+    const override = selectedProject()
+    if (override) return { directory: override }
+    return location()
+  })
+  const projectOptions = createMemo(() => [
+    { id: AUTO_PROJECT, label: language.t("settings.context.project.auto") },
+    ...(serverSync().data.project ?? []).flatMap((project) =>
+      project.worktree ? [{ id: project.worktree, label: project.worktree }] : [],
+    ),
+  ])
+
   const dirClient = createMemo(() => {
-    const value = location()
+    const value = effectiveLocation()
     return value ? serverSdk().createClient({ directory: value.directory, throwOnError: true }) : undefined
   })
 
@@ -133,6 +148,25 @@ export const SettingsContextV2: Component<{ directory: Accessor<string | undefin
           <Show when={sources.error}>
             <div class="settings-v2-context-status">{language.t("settings.context.error")}</div>
           </Show>
+          <section class="settings-v2-section">
+            <h3 class="settings-v2-section-title">{language.t("settings.context.project")}</h3>
+            <SettingsListV2>
+              <SettingsRowV2
+                title={language.t("settings.context.project")}
+                description={effectiveLocation()?.directory}
+              >
+                <SelectV2
+                  appearance="inline"
+                  options={projectOptions()}
+                  current={projectOptions().find((option) => option.id === (selectedProject() ?? AUTO_PROJECT))}
+                  value={(option) => option.id}
+                  label={(option) => option.label}
+                  placeholder={language.t("settings.context.project")}
+                  onSelect={(option) => setSelectedProject(option && option.id !== AUTO_PROJECT ? option.id : undefined)}
+                />
+              </SettingsRowV2>
+            </SettingsListV2>
+          </section>
           <section class="settings-v2-section">
             <h3 class="settings-v2-section-title">{language.t("settings.context.agent")}</h3>
             <SettingsListV2>

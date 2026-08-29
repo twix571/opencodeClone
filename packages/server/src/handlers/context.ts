@@ -31,9 +31,9 @@ export const ContextHandler = HttpApiBuilder.group(Api, "server.context", (handl
           Effect.gen(function* () {
             const location = yield* Location.Service
             const fileMutation = yield* FileMutation.Service
-            const directory = String(location.directory)
-            const target = path.resolve(directory, ctx.payload.path)
-            if (!FSUtil.contains(directory, target) || path.basename(target) !== "AGENTS.md") {
+            const projectRoot = String(location.project.directory)
+            const target = path.resolve(projectRoot, ctx.payload.path)
+            if (!FSUtil.contains(projectRoot, target) || path.basename(target) !== "AGENTS.md") {
               return yield* new InvalidRequestError({
                 message: `Refusing to write outside the project: ${ctx.payload.path}`,
               })

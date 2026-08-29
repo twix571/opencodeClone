@@ -54,15 +54,15 @@ export const inspect = (agentID?: string) =>
       })
     }
 
-    const directory = String(location.directory)
+    const projectRoot = String(location.project.directory)
     for (const file of files) {
       const resolved = String(file.path)
-      const editable = FSUtil.contains(directory, resolved) && basename(resolved) === "AGENTS.md"
+      const editable = FSUtil.contains(projectRoot, resolved) && basename(resolved) === "AGENTS.md"
       sources.push({
         key: `instructions/${resolved}`,
         kind: "instructions",
-        title: editable ? relative(directory, resolved) : resolved,
-        path: editable ? relative(directory, resolved) : undefined,
+        title: editable ? relative(projectRoot, resolved) : resolved,
+        path: editable ? relative(projectRoot, resolved) : undefined,
         editable,
         content: file.content,
       })

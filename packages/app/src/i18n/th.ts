@@ -1252,4 +1252,7 @@ export const dict = {
   "settings.context.saveError": "Failed to save changes.",
   "customMenu.tab.settings": "Settings",
   "customMenu.tab.custom": "Custom",
+  "settings.context.project": "Project",
+  "settings.context.project.auto": "Current project",
+  "customMenu.tab.actions": "Actions",
 }
