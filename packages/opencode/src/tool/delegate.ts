@@ -20,7 +20,7 @@ const Parameters = Schema.Struct({
   subagent_type: Schema.String.annotate({ description: "The type of specialized agent to use for this task" }),
   worktree: Schema.optional(Schema.Boolean).annotate({
     description:
-      "Run the task in a fresh git worktree so it cannot conflict with your own edits. Defaults to true. Set to false to run in the current directory.",
+      "Run the task in a fresh git worktree so it cannot conflict with your own edits. Defaults to false: delegates run inside the current session's directory (and therefore its worktree). Set to true to run in a fresh worktree.",
   }),
   task_id: Schema.optional(Schema.String).annotate({
     description:
@@ -73,7 +73,7 @@ export const DelegateTool = Tool.define(
       params: Schema.Schema.Type<typeof Parameters>,
       ctx: Tool.Context,
     ) {
-      const useWorktree = params.worktree !== false
+      const useWorktree = params.worktree === true
 
       if (!ctx.extra?.bypassAgentCheck) {
         yield* ctx.ask({

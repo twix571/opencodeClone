@@ -194,6 +194,7 @@ describe("tool.delegate", () => {
             delegateInput({
               description: "write child file",
               prompt: "create the file child-output.txt with content hello",
+              worktree: true,
             }),
           )
           yield* llm.textMatch((hit) => body(hit.body).includes('state=\\"running\\"'), "ack")
@@ -315,12 +316,14 @@ describe("tool.delegate", () => {
                 input: delegateInput({
                   description: "parallel a",
                   prompt: "create the file parallel-a-output.txt with content A",
+                  worktree: true,
                 }),
               },
               {
                 input: delegateInput({
                   description: "parallel b",
                   prompt: "create the file parallel-b-output.txt with content B",
+                  worktree: true,
                 }),
               },
             ),

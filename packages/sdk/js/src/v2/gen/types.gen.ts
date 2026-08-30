@@ -81,6 +81,7 @@ export type Event =
   | EventProjectUpdated
   | EventSessionStatus
   | EventSessionIdle
+  | EventSessionDigest
   | EventQuestionAsked
   | EventQuestionReplied
   | EventQuestionRejected
@@ -691,6 +692,15 @@ export type SessionStatus =
   | {
       type: "busy"
     }
+
+export type SessionDigest = {
+  sessionID: string
+  status: "completed" | "error" | "cancelled"
+  branch?: string
+  directory?: string
+  files?: Array<SnapshotFileDiff>
+  messageSummary?: string
+}
 
 export type QuestionOption = {
   /**
@@ -1507,6 +1517,14 @@ export type GlobalEvent = {
       }
     | {
         id: string
+        type: "session.digest"
+        properties: {
+          sessionID: string
+          digest: SessionDigest
+        }
+      }
+    | {
+        id: string
         type: "question.asked"
         properties: {
           id: string
@@ -1672,6 +1690,7 @@ export type PermissionConfig =
       list?: PermissionRuleConfig
       bash?: PermissionRuleConfig
       task?: PermissionRuleConfig
+      worktree?: PermissionRuleConfig
       external_directory?: PermissionRuleConfig
       todowrite?: PermissionActionConfig
       question?: PermissionActionConfig
@@ -1762,6 +1781,7 @@ export type ProviderConfig = {
       id?: string
       name?: string
       family?: string
+      outputTokenMax?: number
       release_date?: string
       attachment?: boolean
       reasoning?: boolean
@@ -2170,6 +2190,10 @@ export type WorktreeCreateInput = {
    * Additional startup script to run after the project's start command
    */
   startCommand?: string
+  /**
+   * Whether to run the project's start command after boot. Defaults to true. Disable for isolated tasks that boot their own instance.
+   */
+  runStart?: boolean
 }
 
 export type Worktree = {
@@ -2829,6 +2853,24 @@ export type SessionStatus2 = {
   }
 }
 
+export type SessionDigest2 = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "session.digest"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    sessionID: string
+    digest: SessionDigest
+  }
+}
+
 export type QuestionReplied2 = {
   id: string
   metadata?: {
@@ -2943,6 +2985,7 @@ export type V2Event =
   | ProjectUpdated
   | SessionStatus2
   | SessionIdle
+  | SessionDigest2
   | QuestionAsked
   | QuestionReplied2
   | QuestionRejected2
@@ -6956,6 +6999,15 @@ export type EventSessionIdle = {
   type: "session.idle"
   properties: {
     sessionID: string
+  }
+}
+
+export type EventSessionDigest = {
+  id: string
+  type: "session.digest"
+  properties: {
+    sessionID: string
+    digest: SessionDigest
   }
 }
 

@@ -362,7 +362,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     if (isNewSession) {
       if (worktreeSelection === "create") {
         const createdWorktree = await client.worktree
-          .create({ directory: projectDirectory })
+          .create({ directory: projectDirectory, worktreeCreateInput: { runStart: false } })
           .then((x) => x.data)
           .catch((err) => {
             showToast({
@@ -377,10 +377,13 @@ export function createPromptSubmit(input: PromptSubmitInput) {
             title: language.t("prompt.toast.worktreeCreateFailed.title"),
             description: language.t("common.requestFailed"),
           })
-          return
+          // Fall back to the project directory so a failed or non-git worktree
+          // create never blocks session creation.
+          sessionDirectory = projectDirectory
+        } else {
+          WorktreeState.pending(sdk().scope, createdWorktree.directory)
+          sessionDirectory = createdWorktree.directory
         }
-        WorktreeState.pending(sdk().scope, createdWorktree.directory)
-        sessionDirectory = createdWorktree.directory
       }
 
       if (worktreeSelection !== "main" && worktreeSelection !== "create") {

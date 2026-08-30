@@ -14,7 +14,7 @@ export function resolveNewSessionWorktree(input: {
   if (!input.enabled) return "main"
   if (input.selected) return input.selected
   if (input.projectWorktree && input.directory !== input.projectWorktree) return input.directory
-  return "main"
+  return "create"
 }
 
 export function normalizeNewSessionWorktree(value: string, directory: string, projectWorktree?: string) {

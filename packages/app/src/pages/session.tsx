@@ -599,7 +599,7 @@ export default function Page() {
 
   const [store, setStore] = createStore({
     ...sessionViewState(),
-    newSessionWorktree: "main",
+    newSessionWorktree: "create",
     deferRender: false,
   })
 
@@ -967,7 +967,7 @@ export default function Page() {
       () => sdk().directory,
       (dir) => {
         if (!dir) return
-        setStore("newSessionWorktree", "main")
+        setStore("newSessionWorktree", "create")
       },
       { defer: true },
     ),
@@ -2189,7 +2189,7 @@ export default function Page() {
                         inputRef = el
                       }}
                       newSessionWorktree={newSessionWorktree()}
-                      onNewSessionWorktreeReset={() => setStore("newSessionWorktree", "main")}
+                      onNewSessionWorktreeReset={() => setStore("newSessionWorktree", "create")}
                       onSubmit={() => {
                         comments.clear()
                         resumeScroll()
@@ -2217,7 +2217,7 @@ export default function Page() {
                       get newSessionWorktree() {
                         return newSessionWorktree()
                       },
-                      onNewSessionWorktreeReset: () => setStore("newSessionWorktree", "main"),
+                      onNewSessionWorktreeReset: () => setStore("newSessionWorktree", "create"),
                       onSubmit: () => {
                         comments.clear()
                         resumeScroll()
