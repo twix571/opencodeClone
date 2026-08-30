@@ -10,6 +10,7 @@ import { Auth } from "../auth"
 import { ProviderTransform } from "@/provider/transform"
 
 import PROMPT_GENERATE from "./generate.txt"
+import PROMPT_SUPERVISOR from "./supervisor.txt"
 import PROMPT_COMPACTION from "./prompt/compaction.txt"
 import PROMPT_EXPLORE from "./prompt/explore.txt"
 import PROMPT_SUMMARY from "./prompt/summary.txt"
@@ -129,9 +130,30 @@ const layer = Layer.effect(
           // mirrors github.com/github/gitignore Node.gitignore pattern for .env files
           read: {
             "*": "allow",
+            "**globalAGENTS.md": "deny",
             "*.env": "ask",
             "*.env.*": "ask",
             "*.env.example": "allow",
+          },
+          write: {
+            "*": "allow",
+            "**globalAGENTS.md": "deny",
+          },
+          edit: {
+            "*": "allow",
+            "**globalAGENTS.md": "deny",
+          },
+          grep: {
+            "*": "allow",
+            "**globalAGENTS.md": "deny",
+          },
+          glob: {
+            "*": "allow",
+            "**globalAGENTS.md": "deny",
+          },
+          bash: {
+            "*": "allow",
+            "**globalAGENTS.md": "deny",
           },
           session: "allow",
         })
@@ -263,6 +285,48 @@ const layer = Layer.effect(
               user,
             ),
             prompt: PROMPT_SUMMARY,
+          },
+          supervisor: {
+            name: "supervisor",
+            description:
+              "The workspace supervisor. Reviews finished session runs and decides, with the user, what happens to their work (commit / push / restart GUI).",
+            mode: "primary",
+            options: {},
+            native: true,
+            hidden: true,
+            prompt: PROMPT_SUPERVISOR,
+            permission: Permission.merge(
+              defaults,
+              Permission.fromConfig({
+                // The supervisor is the only agent allowed to read the rules file.
+                read: {
+                  "*": "allow",
+                  "**globalAGENTS.md": "allow",
+                },
+                write: {
+                  "*": "allow",
+                  "**globalAGENTS.md": "allow",
+                },
+                edit: {
+                  "*": "allow",
+                  "**globalAGENTS.md": "allow",
+                },
+                grep: {
+                  "*": "allow",
+                  "**globalAGENTS.md": "allow",
+                },
+                glob: {
+                  "*": "allow",
+                  "**globalAGENTS.md": "allow",
+                },
+                bash: {
+                  "*": "allow",
+                  "**globalAGENTS.md": "allow",
+                },
+                question: "allow",
+              }),
+              user,
+            ),
           },
         }
 

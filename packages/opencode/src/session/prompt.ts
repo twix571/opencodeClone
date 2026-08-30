@@ -1256,13 +1256,16 @@ const layer = Layer.effect(
 
             yield* plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
 
-            const [skills, env, instructions, mcpInstructions, modelMsgs] = yield* Effect.all([
+            const [skills, env, mcpInstructions, modelMsgs] = yield* Effect.all([
               sys.skills(agent),
               sys.environment(model),
-              instruction.system().pipe(Effect.orDie),
               sys.mcp(agent, session.permission),
               MessageV2.toModelMessagesEffect(msgs, model),
             ])
+            const instructions =
+              agent.name === "supervisor"
+                ? yield* instruction.globalRules().pipe(Effect.orDie)
+                : yield* instruction.system().pipe(Effect.orDie)
             const system = [
               ...env,
               ...instructions,

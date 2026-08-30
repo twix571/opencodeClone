@@ -262,3 +262,49 @@ describe("Instruction.systemPaths global config", () => {
     }),
   )
 })
+
+describe("Instruction.globalRules", () => {
+  const provideGitDir =
+    (files: Record<string, string> = {}) =>
+    <A, E, R>(self: (dir: string) => Effect.Effect<A, E, R>) =>
+      provideTmpdirInstance(
+        (dir) =>
+          Effect.gen(function* () {
+            yield* writeFiles(dir, files)
+            return yield* self(dir).pipe(provideInstruction({ home: dir, config: dir }))
+          }),
+        { git: true },
+      )
+
+  it.live("returns the workspace globalAGENTS.md content", () =>
+    provideGitDir({ "globalAGENTS.md": "# Session Rules", "src/file.ts": "x" })((dir) =>
+      Effect.gen(function* () {
+        const svc = yield* Instruction.Service
+        const rules = yield* svc.globalRules()
+        expect(rules).toEqual([`Instructions from: ${path.join(dir, "globalAGENTS.md")}\n# Session Rules`])
+      }),
+    ),
+  )
+
+  it.live("returns empty when no globalAGENTS.md exists", () =>
+    provideGitDir({ "src/file.ts": "x" })(() =>
+      Effect.gen(function* () {
+        const svc = yield* Instruction.Service
+        expect(yield* svc.globalRules()).toEqual([])
+      }),
+    ),
+  )
+
+  it.live("never includes globalAGENTS.md in normal agent instructions", () =>
+    provideGitDir({ "globalAGENTS.md": "# Session Rules", "AGENTS.md": "# Project Instructions" })(() =>
+      Effect.gen(function* () {
+        const svc = yield* Instruction.Service
+        const system = yield* svc.system()
+        expect(system).toHaveLength(1)
+        expect(system[0]).toContain("AGENTS.md")
+        expect(system[0]).not.toContain("globalAGENTS.md")
+      }),
+    ),
+  )
+})
+

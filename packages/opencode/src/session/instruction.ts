@@ -35,6 +35,7 @@ export interface Interface {
   readonly clear: (messageID: MessageID) => Effect.Effect<void>
   readonly systemPaths: () => Effect.Effect<Set<string>, FSUtil.Error>
   readonly system: () => Effect.Effect<string[], FSUtil.Error>
+  readonly globalRules: () => Effect.Effect<string[], FSUtil.Error>
   readonly find: (dir: string) => Effect.Effect<string | undefined, FSUtil.Error>
   readonly resolve: (
     messages: SessionV1.WithParts[],
@@ -168,6 +169,13 @@ const layer: Layer.Layer<
       ]
     })
 
+    const globalRules = Effect.fn("Instruction.globalRules")(function* () {
+      const ctx = yield* InstanceState.context
+      const filepath = path.resolve(path.join(ctx.worktree, "globalAGENTS.md"))
+      const content = yield* read(filepath)
+      return content ? [`Instructions from: ${filepath}\n${content}`] : []
+    })
+
     const find = Effect.fn("Instruction.find")(function* (dir: string) {
       for (const file of instructionFiles) {
         const filepath = path.resolve(path.join(dir, file))
@@ -220,7 +228,7 @@ const layer: Layer.Layer<
       return results
     })
 
-    return Service.of({ clear, systemPaths, system, find, resolve })
+    return Service.of({ clear, systemPaths, system, globalRules, find, resolve })
   }),
 )
 
