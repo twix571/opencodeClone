@@ -28,6 +28,10 @@ databases directly. From `packages/opencode`:
 The tool (`script/sessions.ts`) opens the DBs read-only and never writes.
 Prefer it over hand-querying `~/.local/share/opencode/opencode*.db`.
 
+Agents also get a built-in `session` tool (see `src/tool/session.ts`) that can
+list recent sessions and read conversations from other sessions, so subagents
+and follow-up runs can pull context from earlier work without shelling out.
+
 # Module shape
 
 Do not use `export namespace Foo { ... }` for module organization. It is not

@@ -133,6 +133,7 @@ const layer = Layer.effect(
             "*.env.*": "ask",
             "*.env.example": "allow",
           },
+          session: "allow",
         })
 
         const user = Permission.fromConfig(cfg.permission ?? {})
@@ -206,6 +207,7 @@ const layer = Layer.effect(
                 webfetch: "allow",
                 websearch: "allow",
                 read: "allow",
+                session: "allow",
                 external_directory: readonlyExternalDirectory,
               }),
               user,

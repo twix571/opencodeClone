@@ -1,0 +1,5 @@
+- Read other sessions and their conversation history to understand context, past work, or what other agents are doing
+- `list` shows recent sessions (id, title, agent, directory, timestamps) so you can discover a session to read
+- `get <sessionID>` returns a session's conversation as markdown (reasoning omitted and tool output truncated by default to keep context small)
+- Use `list` first to find a session ID, then `get` to read its conversation
+- Prefer `get` with `limit` to read only the most recent messages, and `role: "user"` to skim just the prompts
