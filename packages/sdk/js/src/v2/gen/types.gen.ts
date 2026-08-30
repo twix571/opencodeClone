@@ -695,11 +695,22 @@ export type SessionStatus =
 
 export type SessionDigest = {
   sessionID: string
+  title?: string
   status: "completed" | "error" | "cancelled"
   branch?: string
   directory?: string
   files?: Array<SnapshotFileDiff>
   messageSummary?: string
+  cost?: number
+  tokens?: {
+    input: number
+    output: number
+    reasoning: number
+    cache: {
+      read: number
+      write: number
+    }
+  }
 }
 
 export type QuestionOption = {

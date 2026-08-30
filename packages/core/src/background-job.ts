@@ -352,8 +352,11 @@ export const make = Effect.gen(function* () {
       }
       return [{ info: snapshot(next), done: job.done, scope: job.scope }, new Map(jobs).set(id, next)]
     })
-    if (result.info && result.done) yield* Deferred.succeed(result.done, result.info).pipe(Effect.ignore)
+    // Close the run scope before resolving waiters so a cancelled job is only
+    // observed as such once its run fiber has actually stopped and its interrupt
+    // finalizers have run (e.g. a session marking its assistant message aborted).
     if (result.scope) yield* Scope.close(result.scope, Exit.void)
+    if (result.info && result.done) yield* Deferred.succeed(result.done, result.info).pipe(Effect.ignore)
     return result.info
   })
 

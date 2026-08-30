@@ -13,11 +13,24 @@ import { FileDiff } from "./file-diff"
  */
 export const Info = Schema.Struct({
   sessionID: SessionID,
+  title: optional(Schema.String),
   status: Schema.Literals(["completed", "error", "cancelled"]),
   branch: optional(Schema.String),
   directory: optional(Schema.String),
   files: optional(Schema.Array(FileDiff.Info)),
   messageSummary: optional(Schema.String),
+  cost: optional(Schema.Finite),
+  tokens: optional(
+    Schema.Struct({
+      input: Schema.Finite,
+      output: Schema.Finite,
+      reasoning: Schema.Finite,
+      cache: Schema.Struct({
+        read: Schema.Finite,
+        write: Schema.Finite,
+      }),
+    }),
+  ),
 }).annotate({ identifier: "SessionDigest" })
 export type Info = Schema.Schema.Type<typeof Info>
 
