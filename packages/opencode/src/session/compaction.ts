@@ -31,6 +31,7 @@ const TOOL_OUTPUT_MAX_CHARS = 2_000
 const PRUNE_PROTECTED_TOOLS = ["skill"]
 const MIN_PRESERVE_RECENT_TOKENS = 2_000
 const MAX_PRESERVE_RECENT_TOKENS = 15_000
+const MAX_PRESERVE_RECENT_TOKENS_LARGE_CONTEXT = 40_000
 type Turn = {
   start: number
   end: number
@@ -113,9 +114,10 @@ function completedCompactions(messages: SessionV1.WithParts[]) {
 }
 
 function preserveRecentBudget(input: { cfg: ConfigV1.Info; model: Provider.Model }) {
+  const max = input.model.limit.context >= 200_000 ? MAX_PRESERVE_RECENT_TOKENS_LARGE_CONTEXT : MAX_PRESERVE_RECENT_TOKENS
   return (
     input.cfg.compaction?.preserve_recent_tokens ??
-    Math.min(MAX_PRESERVE_RECENT_TOKENS, Math.max(MIN_PRESERVE_RECENT_TOKENS, Math.floor(usable(input) * 0.25)))
+    Math.min(max, Math.max(MIN_PRESERVE_RECENT_TOKENS, Math.floor(usable(input) * 0.25)))
   )
 }
 

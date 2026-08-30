@@ -70,10 +70,14 @@ export function renderOutput(input: {
   state: "running" | "completed" | "error"
   summary?: string
   text: string
+  worktree?: { directory: string; branch?: string }
 }) {
   const tag = input.state === "error" ? "task_error" : "task_result"
+  const attrs = input.worktree
+    ? ` worktree="${input.worktree.directory}"${input.worktree.branch ? ` branch="${input.worktree.branch}"` : ""}`
+    : ""
   return [
-    `<task id="${input.sessionID}" state="${input.state}">`,
+    `<task id="${input.sessionID}" state="${input.state}"${attrs}>`,
     ...(input.summary ? [`<summary>${input.summary}</summary>`] : []),
     `<${tag}>`,
     input.text,
@@ -223,6 +227,7 @@ export const injectTaskResult = Effect.fn("Task.injectTaskResult")(function* (in
   state: "completed" | "error"
   description: string
   text: string
+  worktree?: { directory: string; branch?: string }
   sessions: Session.Interface
   scope: Scope.Scope
 }) {
@@ -244,6 +249,7 @@ export const injectTaskResult = Effect.fn("Task.injectTaskResult")(function* (in
                 ? `Background task completed: ${input.description}`
                 : `Background task failed: ${input.description}`,
             text: input.text,
+            worktree: input.worktree,
           }),
         },
       ],
@@ -254,12 +260,12 @@ export const injectTaskResult = Effect.fn("Task.injectTaskResult")(function* (in
 export const TaskTool = Tool.define(
   id,
   Effect.gen(function* () {
-    const agent = yield* Agent.Service
     const background = yield* BackgroundJob.Service
-    const config = yield* Config.Service
-    const sessions = yield* Session.Service
     const scope = yield* Scope.Scope
     const flags = yield* RuntimeFlags.Service
+    const agent = yield* Agent.Service
+    const config = yield* Config.Service
+    const sessions = yield* Session.Service
     const database = yield* Database.Service
 
     const run = Effect.fn("TaskTool.execute")(function* (

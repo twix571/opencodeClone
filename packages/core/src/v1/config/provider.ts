@@ -14,6 +14,10 @@ export const Model = Schema.Struct({
   id: Schema.optional(Schema.String),
   name: Schema.optional(Schema.String),
   family: Schema.optional(Schema.String),
+  outputTokenMax: Schema.optional(PositiveInt).annotate({
+    description:
+      "Per-model cap on output tokens sent to the provider. Overrides the family default (64k for deepseek-v4-flash, otherwise 32k).",
+  }),
   release_date: Schema.optional(Schema.String),
   attachment: Schema.optional(Schema.Boolean),
   reasoning: Schema.optional(Schema.Boolean),

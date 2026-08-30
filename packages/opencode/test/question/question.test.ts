@@ -321,7 +321,7 @@ it.instance(
 // list tests
 
 it.instance(
-  "list - returns all pending requests",
+  "serializes questions - second ask is queued until the first resolves",
   () =>
     Effect.gen(function* () {
       const fiber1 = yield* askEffect({
@@ -346,10 +346,58 @@ it.instance(
         ],
       }).pipe(Effect.forkScoped)
 
-      const pending = yield* waitForPending(2)
-      expect(pending.length).toBe(2)
-      yield* rejectAll
+      const first = yield* waitForPending(1)
+      expect(first).toHaveLength(1)
+      expect(first[0].sessionID).toBe(SessionID.make("ses_test1"))
+
+      yield* replyEffect({ requestID: first[0].id, answers: [["A"]] })
+      expect(yield* Fiber.join(fiber1)).toEqual([["A"]])
+
+      const second = yield* waitForPending(1)
+      expect(second[0].sessionID).toBe(SessionID.make("ses_test2"))
+
+      yield* replyEffect({ requestID: second[0].id, answers: [["B"]] })
+      expect(yield* Fiber.join(fiber2)).toEqual([["B"]])
+    }),
+  { git: true },
+)
+
+it.instance(
+  "serializes questions - rejection promotes the next queued ask",
+  () =>
+    Effect.gen(function* () {
+      const fiber1 = yield* askEffect({
+        sessionID: SessionID.make("ses_test1"),
+        questions: [
+          {
+            question: "Question 1?",
+            header: "Q1",
+            options: [{ label: "A", description: "A" }],
+          },
+        ],
+      }).pipe(Effect.forkScoped)
+
+      const fiber2 = yield* askEffect({
+        sessionID: SessionID.make("ses_test2"),
+        questions: [
+          {
+            question: "Question 2?",
+            header: "Q2",
+            options: [{ label: "B", description: "B" }],
+          },
+        ],
+      }).pipe(Effect.forkScoped)
+
+      const first = yield* waitForPending(1)
+      expect(first).toHaveLength(1)
+
+      yield* rejectEffect(first[0].id)
       expect((yield* Fiber.await(fiber1))._tag).toBe("Failure")
+
+      const second = yield* waitForPending(1)
+      expect(second[0].sessionID).toBe(SessionID.make("ses_test2"))
+
+      yield* rejectEffect(second[0].id)
       expect((yield* Fiber.await(fiber2))._tag).toBe("Failure")
     }),
   { git: true },
