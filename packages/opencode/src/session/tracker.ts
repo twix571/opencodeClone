@@ -92,6 +92,9 @@ const layer = Layer.effect(
       const session = yield* sessions.get(input.sessionID).pipe(Effect.option)
       if (Option.isNone(session)) return yield* input.work
       if (session.value.parentID) return yield* input.work
+      // The supervisor session is woken by digests; its own runs must never be
+      // tracked, or a finished supervisor turn would wake it again.
+      if (session.value.agent === "supervisor") return yield* input.work
       const job = yield* background.start({
         id: input.sessionID,
         type: "session",
