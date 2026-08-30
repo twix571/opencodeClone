@@ -166,6 +166,13 @@ export const dict: Record<string, string> = {
   "ui.tool.agent": "{{type}} Agent",
   "ui.tool.agent.default": "Agent",
   "ui.tool.skill": "Skill",
+  "ui.tool.task.hover.running": "Running",
+  "ui.tool.task.hover.pending": "Pending",
+  "ui.tool.task.hover.done": "Done",
+  "ui.tool.task.hover.failed": "Failed",
+  "ui.tool.task.hover.in": "in {{time}}",
+  "ui.tool.task.hover.background": "Background",
+  "ui.tool.task.hover.result": "Result",
 
   "ui.basicTool.called": "Called `{{tool}}`",
   "ui.toolErrorCard.failed": "Failed",

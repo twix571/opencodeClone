@@ -1,0 +1,115 @@
+[data-component="task-hover"] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+  max-width: 300px;
+  padding: 4px 6px;
+  font-family: var(--font-family-sans);
+}
+
+[data-slot="task-hover-status"] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--v2-text-text-base);
+
+  [data-component="icon"] {
+    color: var(--v2-icon-icon-base);
+  }
+
+  [data-slot="task-hover-duration"] {
+    color: var(--v2-text-text-faint);
+    font-weight: var(--font-weight-regular);
+  }
+
+  &[data-state="done"] {
+    [data-component="icon"] {
+      color: var(--v2-state-fg-success);
+    }
+  }
+
+  &[data-state="error"] {
+    [data-component="icon"] {
+      color: var(--v2-state-fg-danger);
+    }
+  }
+}
+
+[data-component="spinner"].task-hover-spinner {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+[data-slot="task-hover-background"] {
+  margin-inline-start: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--v2-text-text-faint);
+  background: var(--v2-background-bg-layer-02);
+  border: 0.5px solid var(--v2-border-border-base);
+  white-space: nowrap;
+}
+
+[data-slot="task-hover-meta"] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+[data-slot="task-hover-agent"] {
+  font-weight: var(--font-weight-medium);
+  color: var(--v2-text-text-base);
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-slot="task-hover-separator"] {
+  flex-shrink: 0;
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="task-hover-model"] {
+  color: var(--v2-text-text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-slot="task-hover-result"] {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+[data-slot="task-hover-result-label"] {
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="task-hover-result-text"] {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--v2-text-text-base);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}

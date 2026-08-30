@@ -66,6 +66,7 @@ import { animate } from "motion"
 import { attached, inline, kind, typeLabel } from "./message-file"
 import { readPartText } from "./message-part-text"
 import { SessionProgressIndicatorV2 } from "../v2/components/session-progress-indicator-v2"
+import { TaskToolHoverCard } from "./tool-task-hover-card"
 
 async function writeClipboard(text: string): Promise<boolean> {
   const body = typeof document === "undefined" ? undefined : document.body
@@ -509,7 +510,8 @@ export function getToolInfo(
         title: webSearchProviderLabel(metadata?.provider, i18n),
         subtitle: input.query,
       }
-    case "task": {
+    case "task":
+    case "delegate": {
       const type =
         typeof input.subagent_type === "string" && input.subagent_type
           ? input.subagent_type[0]!.toUpperCase() + input.subagent_type.slice(1)
@@ -602,6 +604,14 @@ function taskSession(
     .filter((session) => (description ? session.title.startsWith(description) : true))
     .filter((session) => (agent ? session.title.includes(`@${agent}`) : true))
     .sort((a, b) => (b.time.created ?? 0) - (a.time.created ?? 0))[0]?.id
+}
+
+function taskOutputText(input: string) {
+  return input
+    .replace(/<\/?task(?:\s[^>]*)?>/g, "")
+    .replace(/<\/?(?:task_result|task_error|summary)(?:\s[^>]*)?>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
 }
 
 const CONTEXT_GROUP_TOOLS = new Set(["read", "glob", "grep", "list"])
@@ -1460,6 +1470,7 @@ export interface ToolProps {
   sessionID?: string
   output?: string
   status?: string
+  time?: { start?: number; end?: number }
   hideDetails?: boolean
   defaultOpen?: boolean
   open?: boolean
@@ -1487,7 +1498,8 @@ export function registerTool(input: { name: string; render?: ToolComponent }) {
 }
 
 export function getTool(name: string) {
-  return state[name === "apply_patch" ? "patch" : name === "bash" ? "shell" : name]?.render
+  return state[name === "apply_patch" ? "patch" : name === "bash" ? "shell" : name === "delegate" ? "task" : name]
+    ?.render
 }
 
 export const ToolRegistry = {
@@ -1548,16 +1560,16 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
   // @ts-expect-error
   const partMetadata = () => part().state?.metadata ?? emptyMetadata
   const taskId = createMemo(() => {
-    if (part().tool !== "task") return
+    if (part().tool !== "task" && part().tool !== "delegate") return
     const value = partMetadata().sessionId
     if (typeof value === "string" && value) return value
   })
   const taskHref = createMemo(() => {
-    if (part().tool !== "task") return
+    if (part().tool !== "task" && part().tool !== "delegate") return
     return sessionLink(taskId(), data.sessionHref)
   })
   const taskSubtitle = createMemo(() => {
-    if (part().tool !== "task") return undefined
+    if (part().tool !== "task" && part().tool !== "delegate") return undefined
     const value = input().description
     if (typeof value === "string" && value) return value
     return taskId()
@@ -1617,6 +1629,7 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
               // @ts-expect-error
               output={part().state.output}
               status={part().state.status}
+              time={(part().state as { time?: { start?: number; end?: number } }).time}
               hideDetails={props.hideDetails}
               defaultOpen={props.defaultOpen}
               open={controlledOpen()}
@@ -1985,6 +1998,11 @@ ToolRegistry.register({
       if (typeof value === "string" && value) return value
       return taskSession(props.input, data.sessionID, data.store.session, data.store.agent)
     })
+    const childSession = createMemo(() => {
+      const id = childSessionId()
+      if (!id) return undefined
+      return (data.store.session ?? []).find((session) => session.id === id)
+    })
     const agent = createMemo(() => taskAgent(props.input.subagent_type, data.store.agent))
     const title = createMemo(() => agent().name ?? i18n.t("ui.tool.agent.default"))
     const tone = createMemo(() => agent().color)
@@ -1999,6 +2017,73 @@ ToolRegistry.register({
       return value
     })
     const running = createMemo(() => props.status === "pending" || props.status === "running")
+    const background = () => props.metadata.background === true
+    const childBusy = createMemo(() => {
+      const id = childSessionId()
+      if (!id) return false
+      const status = data.store.session_status[id]
+      return status?.type === "busy" || status?.type === "retry"
+    })
+    const childFailed = createMemo(() => {
+      const id = childSessionId()
+      if (!background() || !id) return false
+      const messages = data.store.message[id] ?? []
+      const last = messages[messages.length - 1]
+      return last?.role === "assistant" && !!last.error
+    })
+    const hoverRunning = createMemo(() => {
+      if (background()) {
+        if (!childSessionId()) return true
+        return childBusy()
+      }
+      return running()
+    })
+    const hoverDone = createMemo(() => {
+      if (background()) {
+        if (!childSessionId()) return false
+        return !childBusy() && !childFailed()
+      }
+      return props.status === "completed"
+    })
+    const hoverFailed = createMemo(() => background() && !!childSessionId() && childFailed())
+    const model = createMemo(() => {
+      const meta = props.metadata.model
+      if (!meta || typeof meta !== "object") return undefined
+      const modelID = (meta as { modelID?: unknown }).modelID
+      const providerID = (meta as { providerID?: unknown }).providerID
+      if (typeof modelID !== "string") return undefined
+      if (typeof providerID !== "string") return modelID
+      const match = data.store.provider?.all?.get(providerID)
+      return match?.models?.[modelID]?.name ?? modelID
+    })
+    const result = createMemo(() => {
+      const id = childSessionId()
+      if (background() && id && !childBusy()) {
+        const messages = data.store.message[id] ?? []
+        const lastAssistant = [...messages]
+          .reverse()
+          .find((message): message is AssistantMessage => message.role === "assistant")
+        if (lastAssistant) {
+          return (data.store.part?.[lastAssistant.id] ?? [])
+            .filter((part): part is TextPart => part?.type === "text" && !!part.text?.trim())
+            .map((part) => readPartText(data.store.part_text_accum_delta, part))
+            .join("\n\n")
+        }
+      }
+      if (props.status === "completed") return taskOutputText(props.output ?? "")
+      return ""
+    })
+    const start = () => props.time?.start ?? childSession()?.time.created
+    const end = () => {
+      const id = childSessionId()
+      if (background() && id && !childBusy()) {
+        const messages = data.store.message[id] ?? []
+        const last = messages[messages.length - 1]
+        if (last?.role === "assistant" && typeof last.time.completed === "number") return last.time.completed
+        return childSession()?.time.updated
+      }
+      return props.time?.end
+    }
 
     const href = createMemo(() => sessionLink(childSessionId(), data.sessionHref))
     const clickable = createMemo(() => !!(childSessionId() && (data.navigateToSession || href())))
@@ -2067,16 +2152,30 @@ ToolRegistry.register({
     )
 
     return (
-      <BasicTool
-        icon="task"
-        status={props.status}
-        trigger={trigger()}
-        hideDetails
-        triggerAsLink
-        triggerHref={href()}
-        clickable={clickable()}
-        onTriggerClick={navigate}
-        onTriggerKeyDown={navigateKey}
+      <TaskToolHoverCard
+        trigger={
+          <BasicTool
+            icon="task"
+            status={props.status}
+            trigger={trigger()}
+            hideDetails
+            triggerAsLink
+            triggerHref={href()}
+            clickable={clickable()}
+            onTriggerClick={navigate}
+            onTriggerKeyDown={navigateKey}
+          />
+        }
+        agent={agent().name}
+        agentColor={v2Tone() ?? tone()}
+        model={model()}
+        running={hoverRunning()}
+        done={hoverDone()}
+        failed={hoverFailed()}
+        background={background()}
+        start={start()}
+        end={end()}
+        result={result()}
       />
     )
   },

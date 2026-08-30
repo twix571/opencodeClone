@@ -1,5 +1,6 @@
 # Desktop package notes
 
+- **Dev loop.** `bun run dev:desktop` serves from `packages/desktop/out/` and bundles `packages/opencode/dist/node/node.js` into `out/main`. To apply `packages/opencode` source changes to a running dev GUI, run `bun script/build-node.ts` from `packages/opencode`; `electron-vite dev` watches the bundle, rebuilds `out/main`, and restarts the app automatically. If the GUI has been killed (or won't come back), run `bun run dev:desktop:restart` from the repo root — it kills stale dev processes (including zombie Electron mains that would otherwise hold the single-instance lock and make a fresh launch quit instantly with no window), rebuilds the server bundle, relaunches detached, and waits for the sidecar `server ready` line.
 - Renderer process should only call `window.api` from `src/preload`.
 - Main process should register IPC handlers in `src/main/ipc.ts`.
 - NEVER hardcode user-visible English strings in production code. ALWAYS use an i18n key for native menus, picker titles, dialogs, buttons, accessible labels, and displayed errors.

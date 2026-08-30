@@ -1,0 +1,8 @@
+Launch a subagent in the background and return immediately.
+
+Use when you need to hand off an independent piece of work (implementation, exploration, tests) that can run while you continue talking to the user. The subagent works in the current project, so avoid overlapping with its edits.
+
+Usage notes:
+1. You will be notified automatically when it finishes; the result is injected into the session.
+2. Do not duplicate the delegated work or touch the same files while it runs. Continue with non-overlapping tasks or briefly tell the user what you launched.
+3. Each delegation starts a fresh subagent session. Pass the task_id from a prior result to continue the same subagent session.

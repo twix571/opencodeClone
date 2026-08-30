@@ -148,6 +148,25 @@ const table = sqliteTable("session", {
 
 - Always run `bun typecheck` from package directories (e.g., `packages/opencode`), never `tsc` directly.
 
+## Desktop GUI Bundles Its Own Server
+
+- The desktop app (`packages/desktop`) does **not** serve from the source tree. It embeds a copy of the server in `dist/mac-arm64/OpenCode Dev.app/Contents/Resources/app.asar` and loads it via the v1 sidecar (`out/main/sidecar.js` → `out/main/chunks/node-*.js`). The v2 path (`resources/opencode-cli`) is used only when `OPENCODE_SIDECAR_V2=1`.
+- Building `resources/opencode-cli` (`script/build.ts`) alone does **not** update the desktop's server code.
+- **Dev mode is a different loop and needs no asar repack.** With `bun run dev:desktop`, the GUI serves from `packages/desktop/out/` and bundles `packages/opencode/dist/node/node.js` into `out/main`. To apply `packages/opencode` source changes to a running dev GUI, just run `bun script/build-node.ts` (from `packages/opencode`); `electron-vite dev` watches the bundle, rebuilds `out/main`, and restarts the app automatically. Do not kill the GUI first and do not repack asar.
+- If the dev GUI has been killed (or won't come back), run `bun run dev:desktop:restart` from the repo root. It kills stale dev processes (including zombie Electron processes that would otherwise hold the single-instance lock and make a fresh launch quit instantly with no window), rebuilds the server bundle, relaunches `electron-vite dev` detached, and waits for the sidecar `server ready` line.
+- To make `packages/opencode` source changes reach the **packaged** desktop GUI (not dev), run in order:
+  1. `bun script/build-node.ts` (from `packages/opencode`) — rebuilds the server bundle `dist/node/node.js`.
+  2. `bun run build` (from `packages/desktop`) — electron-vite rebuilds `out/main`, producing a new `chunks/node-*.js`.
+  3. Quit the app first: `osascript -e 'quit app "OpenCode Dev"'`.
+  4. Repack the asar in place with `bun x asar`: extract the existing
+     `dist/mac-arm64/OpenCode Dev.app/Contents/Resources/app.asar` to a temp dir,
+     replace that dir's `out/` with the freshly built `packages/desktop/out/`
+     (keep the extracted `node_modules/` and other files untouched), repack to a
+     new asar, and overwrite the one inside the `.app`. No re-signing is needed —
+     the dev `.app` is adhoc-signed with no sealed resources.
+  5. Relaunch: `open .../OpenCode Dev.app`.
+- Verify at runtime, not by grep for tool names — minified chunks keep task tool definitions compiled in. Check the builtin array: search the new chunk for `builtin:` and confirm `delegate` appears and `task` does not.
+
 ## V2 Session Core
 
 - Keep durable prompt admission separate from model execution. `SessionV2.prompt(...)` admits one durable `session_input` row before scheduling advisory `SessionExecution.wake(sessionID)` unless `resume: false` requests admit-only behavior. The serialized runner promotes admitted inputs into visible user messages at safe boundaries.

@@ -91,7 +91,7 @@ const timelineFallbackItemSize = 60
 const timelineCache = new Map<string, { measurements: VirtualItem[]; toolOpen: Record<string, boolean | undefined> }>()
 
 const taskDescription = (part: PartType, sessionID: string) => {
-  if (part.type !== "tool" || part.tool !== "task") return
+  if (part.type !== "tool" || (part.tool !== "task" && part.tool !== "delegate")) return
   const metadata = "metadata" in part.state ? part.state.metadata : undefined
   if (metadata?.sessionId !== sessionID) return
   const value = part.state.input?.description
