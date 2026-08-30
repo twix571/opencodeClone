@@ -96,7 +96,7 @@ export const DelegateTool = Tool.define(
       }
 
       const created = useWorktree
-        ? yield* worktreeSvc.create({ name: params.description }).pipe(
+        ? yield* worktreeSvc.create({ name: params.description, runStart: false }).pipe(
             Effect.catch((error) => Effect.fail(new Error(`Failed to create worktree: ${error.message}`))),
           )
         : undefined

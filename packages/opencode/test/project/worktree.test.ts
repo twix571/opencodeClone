@@ -1,4 +1,5 @@
 import { afterEach, describe, expect } from "bun:test"
+import * as fs from "fs/promises"
 import path from "path"
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { FSUtil } from "@opencode-ai/core/fs-util"
@@ -7,12 +8,13 @@ import { GlobalBus, type GlobalEvent } from "../../src/bus/global"
 import { Git } from "../../src/git"
 import { InstanceBootstrap } from "../../src/project/bootstrap"
 import { InstanceStore } from "../../src/project/instance-store"
+import { Project } from "../../src/project/project"
 import { Worktree } from "../../src/worktree"
 import { disposeAllInstances, provideInstance, TestInstance } from "../fixture/fixture"
-import { testEffect } from "../lib/effect"
+import { testEffect, pollWithTimeout } from "../lib/effect"
 
 const it = testEffect(
-  LayerNode.compile(LayerNode.group([Worktree.node, FSUtil.node, Git.node]), [
+  LayerNode.compile(LayerNode.group([Worktree.node, FSUtil.node, Git.node, Project.node]), [
     [InstanceStore.bootstrapNode, InstanceBootstrap.node],
   ]),
 )
@@ -240,6 +242,69 @@ describe("Worktree", () => {
     )
   })
 
+  describe("runStart", () => {
+    const startCommand = 'echo "marker" > start-ran'
+
+    const setProjectStartCommand = Effect.fn("WorktreeTest.setProjectStartCommand")(function* (directory: string) {
+      const project = yield* Project.Service
+      const { project: info } = yield* project.fromDirectory(directory)
+      yield* project.update({ projectID: info.id, commands: { start: startCommand } })
+    })
+
+    const createWithStart = Effect.fn("WorktreeTest.createWithStart")(function* (input?: { runStart?: boolean }) {
+      const svc = yield* Worktree.Service
+      const ready = yield* waitReady().pipe(Effect.forkScoped)
+      const info = yield* svc.create(input)
+      yield* Fiber.join(ready)
+      return info
+    })
+
+    it.instance(
+      "runs the project start command by default",
+      () =>
+        Effect.gen(function* () {
+          const test = yield* TestInstance
+          yield* setProjectStartCommand(test.directory)
+          const info = yield* createWithStart()
+
+          const marker = yield* pollWithTimeout(
+            Effect.promise(() =>
+              fs
+                .access(path.join(info.directory, "start-ran"))
+                .then(() => true as const)
+                .catch(() => undefined),
+            ),
+            "project start command did not create marker",
+          )
+          expect(marker).toBe(true)
+
+          yield* removeCreatedWorktree(info.directory)
+        }),
+      { git: true },
+    )
+
+    it.instance(
+      "skips the project start command when runStart is false",
+      () =>
+        Effect.gen(function* () {
+          const test = yield* TestInstance
+          yield* setProjectStartCommand(test.directory)
+          const info = yield* createWithStart({ runStart: false })
+
+          const marker = yield* Effect.promise(() =>
+            fs
+              .access(path.join(info.directory, "start-ran"))
+              .then(() => true)
+              .catch(() => false),
+          )
+          expect(marker).toBe(false)
+
+          yield* removeCreatedWorktree(info.directory)
+        }),
+      { git: true },
+    )
+  })
+
   describe("createFromInfo", () => {
     wintest(
       "creates git worktree and boots asynchronously",
@@ -250,7 +315,6 @@ describe("Worktree", () => {
           const info = yield* svc.makeWorktreeInfo({ name: "from-info-test" })
           const ready = yield* waitReady().pipe(Effect.forkScoped)
           yield* svc.createFromInfo(info)
-
           const list = yield* git(test.directory, ["worktree", "list", "--porcelain"])
           const normalizedList = list.replace(/\\/g, "/")
           const normalizedDir = info.directory.replace(/\\/g, "/")
