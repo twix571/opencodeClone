@@ -535,6 +535,11 @@ export function createServerSyncContextInner(serverSDK: ServerSDK) {
     const eventType: string = event.type
     const recent = bootingRoot || Date.now() - bootedAt < 1500
 
+    if (eventType === "session.wrapup") {
+      const info = (event.properties as { info?: { action?: string; success?: boolean } } | undefined)?.info
+      if (info?.action === "commit_restart" && info.success) window.api?.relaunch?.()
+    }
+
     if (event.current) session.applyV2(event.current)
     session.apply(event)
     if (event.type === "session.created" || event.type === "session.updated" || event.type === "session.deleted") {

@@ -1,0 +1,6 @@
+Wrap up a finished session: commit its worktree and merge the branch into the
+primary branch. Use action "commit" to commit and merge only, "commit_push" to
+also push to the remote, or "commit_restart" to commit, merge, and request a GUI
+relaunch. Only the workspace supervisor should call this, and only after the
+user has chosen an action. The session must be running in a git worktree; the
+worktree is cleaned up after a successful merge.

@@ -157,6 +157,7 @@ const layer = Layer.effect(
           },
           session: "allow",
           supervisor_ask: "allow",
+          session_wrapup: "deny",
         })
 
         const user = Permission.fromConfig(cfg.permission ?? {})
@@ -325,6 +326,7 @@ const layer = Layer.effect(
                   "**globalAGENTS.md": "allow",
                 },
                 question: "allow",
+                session_wrapup: "allow",
               }),
               user,
             ),

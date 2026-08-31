@@ -6,6 +6,7 @@ import { Session } from "@/session/session"
 import { SessionTool } from "./session"
 import { SupervisorAskTool } from "./supervisor-ask"
 import { SupervisorAsk } from "@/session/supervisor-ask"
+import { SessionWrapupTool } from "./session-wrapup"
 import { QuestionTool } from "./question"
 import { ShellTool } from "./shell"
 import { EditTool } from "./edit"
@@ -128,6 +129,7 @@ const layer = Layer.effect(
     const skilltool = yield* SkillTool
     const session = yield* SessionTool
     const supervisorAsk = yield* SupervisorAskTool
+    const sessionWrapup = yield* SessionWrapupTool
     const agent = yield* Agent.Service
     const codeMode = flags.experimentalCodeMode ? yield* Effect.promise(() => import("./code-mode")) : undefined
     const codeModeTool = codeMode ? yield* codeMode.CodeModeTool : undefined
@@ -242,6 +244,7 @@ const layer = Layer.effect(
           plan: Tool.init(plan),
           session: Tool.init(session),
           supervisorAsk: Tool.init(supervisorAsk),
+          sessionWrapup: Tool.init(sessionWrapup),
           ...(codeModeTool ? { execute: Tool.init(codeModeTool) } : {}),
         })
 
@@ -267,6 +270,7 @@ const layer = Layer.effect(
             tool.patch,
             tool.session,
             tool.supervisorAsk,
+            tool.sessionWrapup,
             ...(tool.execute ? [tool.execute] : []),
             ...(flags.experimentalLspTool ? [tool.lsp] : []),
             ...(flags.experimentalPlanMode && flags.client === "cli" ? [tool.plan] : []),

@@ -27,6 +27,15 @@ messages only when a specific signal requires investigation.
    - commit and push
    - commit, then restart the GUI with the new code
 
+## Executing the user's choice
+
+Once the user picks an action, call the session_wrapup tool with that session's
+id and the matching action ("commit", "commit_push", or "commit_restart"). The
+tool commits the session's worktree, merges the branch into the primary branch,
+pushes only when asked, and cleans the worktree up. Report the tool's result
+(including any failure) back to the user. Do not call session_wrapup for a
+session the user has not approved wrapping up.
+
 ## Ground rules
 
 - Ask the user before committing anything. Never guess on a rule decision, a

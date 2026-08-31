@@ -82,6 +82,7 @@ export type Event =
   | EventSessionStatus
   | EventSessionIdle
   | EventSessionDigest
+  | EventSessionWrapup
   | EventQuestionAsked
   | EventQuestionReplied
   | EventQuestionRejected
@@ -711,6 +712,15 @@ export type SessionDigest = {
       write: number
     }
   }
+}
+
+export type SessionWrapup = {
+  sessionID: string
+  action: "commit" | "commit_push" | "commit_restart"
+  branch?: string
+  mergeTarget?: string
+  success: boolean
+  message?: string
 }
 
 export type QuestionOption = {
@@ -1532,6 +1542,14 @@ export type GlobalEvent = {
         properties: {
           sessionID: string
           digest: SessionDigest
+        }
+      }
+    | {
+        id: string
+        type: "session.wrapup"
+        properties: {
+          sessionID: string
+          info: SessionWrapup
         }
       }
     | {
@@ -2882,6 +2900,24 @@ export type SessionDigest2 = {
   }
 }
 
+export type SessionWrapup2 = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "session.wrapup"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    sessionID: string
+    info: SessionWrapup
+  }
+}
+
 export type QuestionReplied2 = {
   id: string
   metadata?: {
@@ -2997,6 +3033,7 @@ export type V2Event =
   | SessionStatus2
   | SessionIdle
   | SessionDigest2
+  | SessionWrapup2
   | QuestionAsked
   | QuestionReplied2
   | QuestionRejected2
@@ -7019,6 +7056,15 @@ export type EventSessionDigest = {
   properties: {
     sessionID: string
     digest: SessionDigest
+  }
+}
+
+export type EventSessionWrapup = {
+  id: string
+  type: "session.wrapup"
+  properties: {
+    sessionID: string
+    info: SessionWrapup
   }
 }
 
