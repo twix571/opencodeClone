@@ -34,6 +34,7 @@ import { SessionID } from "../../src/session/schema"
 import { SessionStatus } from "../../src/session/status"
 import { SessionTracker } from "../../src/session/tracker"
 import { Supervisor } from "../../src/session/supervisor"
+import { SupervisorAsk } from "../../src/session/supervisor-ask"
 import { Skill } from "../../src/skill"
 import { SystemPrompt } from "../../src/session/system"
 import { Snapshot } from "../../src/snapshot"
@@ -116,6 +117,7 @@ const testLLMServerNode = LayerNode.make({ service: TestLLMServer, layer: TestLL
 
 const supervisorRoot = LayerNode.group([
   Supervisor.node,
+  SupervisorAsk.node,
   SessionTracker.node,
   SessionPrompt.node,
   Session.node,
@@ -337,5 +339,50 @@ it.instance("a digest for the supervisor session itself is not re-woken", () =>
     // The supervisor session itself must not be prompted by its own digest.
     expect(messages.filter((m) => m.info.role === "user")).toHaveLength(0)
     void directory
+  }),
+)
+
+it.instance("supervisor_ask answers a question through the channel", () =>
+  Effect.gen(function* () {
+    const { llm } = yield* useServerConfig()
+    const sessions = yield* Session.Service
+    const supervisorAsk = yield* SupervisorAsk.Service
+
+    const chat = yield* sessions.create({ title: "Worker", agent: "build" })
+    yield* llm.text("Yes, that path is allowed with review.")
+    const answer = yield* supervisorAsk.ask({
+      sessionID: chat.id,
+      question: "Is touching src/foo.ts allowed?",
+    })
+    expect(answer).toContain("Yes, that path is allowed")
+  }),
+)
+
+it.instance("a session can call the supervisor_ask tool mid-run", () =>
+  Effect.gen(function* () {
+    const { llm } = yield* useServerConfig()
+    const sessions = yield* Session.Service
+
+    const chat = yield* sessions.create({ title: "Worker", agent: "build" })
+    yield* llm.tool("supervisor_ask", { question: "Is touching src/foo.ts allowed?" })
+    yield* llm.text("Yes, it is allowed.")
+    yield* llm.text("great")
+    yield* promptSession(chat.id)
+
+    const msgs = yield* sessions.messages({ sessionID: chat.id })
+    const last = msgs.findLast((m) => m.info.role === "assistant")
+    const text = last?.parts
+      .filter((p): p is SessionV1.TextPart => p.type === "text")
+      .map((p) => p.text)
+      .join("\n")
+    expect(text).toContain("great")
+
+    const supervisor = (yield* sessions.list({ limit: 100 })).find((s) => s.agent === "supervisor")
+    expect(supervisor).toBeDefined()
+    const supMessages = yield* sessions.messages({ sessionID: supervisor!.id })
+    const supText = supMessages
+      .flatMap((m) => m.parts.filter((p): p is SessionV1.TextPart => p.type === "text").map((p) => p.text))
+      .join("\n")
+    expect(supText).toContain("Is touching src/foo.ts allowed?")
   }),
 )

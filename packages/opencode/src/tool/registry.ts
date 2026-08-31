@@ -4,6 +4,8 @@ import { Ripgrep } from "@opencode-ai/core/ripgrep"
 import { PlanExitTool } from "./plan"
 import { Session } from "@/session/session"
 import { SessionTool } from "./session"
+import { SupervisorAskTool } from "./supervisor-ask"
+import { SupervisorAsk } from "@/session/supervisor-ask"
 import { QuestionTool } from "./question"
 import { ShellTool } from "./shell"
 import { EditTool } from "./edit"
@@ -125,6 +127,7 @@ const layer = Layer.effect(
     const patchtool = yield* ApplyPatchTool
     const skilltool = yield* SkillTool
     const session = yield* SessionTool
+    const supervisorAsk = yield* SupervisorAskTool
     const agent = yield* Agent.Service
     const codeMode = flags.experimentalCodeMode ? yield* Effect.promise(() => import("./code-mode")) : undefined
     const codeModeTool = codeMode ? yield* codeMode.CodeModeTool : undefined
@@ -238,6 +241,7 @@ const layer = Layer.effect(
           lsp: Tool.init(lsptool),
           plan: Tool.init(plan),
           session: Tool.init(session),
+          supervisorAsk: Tool.init(supervisorAsk),
           ...(codeModeTool ? { execute: Tool.init(codeModeTool) } : {}),
         })
 
@@ -262,6 +266,7 @@ const layer = Layer.effect(
             tool.skill,
             tool.patch,
             tool.session,
+            tool.supervisorAsk,
             ...(tool.execute ? [tool.execute] : []),
             ...(flags.experimentalLspTool ? [tool.lsp] : []),
             ...(flags.experimentalPlanMode && flags.client === "cli" ? [tool.plan] : []),
@@ -454,6 +459,7 @@ export const node = LayerNode.make({
     Agent.node,
     Skill.node,
     Session.node,
+    SupervisorAsk.node,
     BackgroundJob.node,
     Provider.node,
     LSP.node,

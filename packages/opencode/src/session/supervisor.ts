@@ -1,9 +1,11 @@
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { SessionDigest } from "@opencode-ai/schema/session-digest"
+import { SessionV1 } from "@opencode-ai/core/v1/session"
 import { EventV2Bridge } from "@/event-v2-bridge"
 import { Session } from "./session"
 import { SessionPrompt } from "./prompt"
 import { SessionID } from "./schema"
+import { SupervisorAsk } from "./supervisor-ask"
 import { InstanceStore } from "@/project/instance-store"
 import { WorkspaceRef } from "@/effect/instance-ref"
 import { Context, Effect, Layer, Option, Scope, Stream } from "effect"
@@ -55,6 +57,19 @@ function wakeMessage(digest: SessionDigest.Info) {
   ].join("\n")
 }
 
+function askMessage(request: SupervisorAsk.Request) {
+  return [
+    `A session in this workspace asks you a question:`,
+    ``,
+    request.question,
+    ``,
+    `The asking session is ${request.sessionID}.`,
+    `Answer from the rules in globalAGENTS.md and your memory. If you are not`,
+    `confident, ask the user (via the question tool) rather than guessing.`,
+    `Keep the answer concise.`,
+  ].join("\n")
+}
+
 const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
@@ -62,6 +77,7 @@ const layer = Layer.effect(
     const prompt = yield* SessionPrompt.Service
     const events = yield* EventV2Bridge.Service
     const store = yield* InstanceStore.Service
+    const supervisorAsk = yield* SupervisorAsk.Service
     const scope = yield* Scope.Scope
 
     const ensure = Effect.fn("Supervisor.ensure")(function* () {
@@ -102,11 +118,39 @@ const layer = Layer.effect(
       yield* store.provide({ directory: session.value.directory }, withRef)
     })
 
+    const handleAsk = Effect.fn("Supervisor.handleAsk")(function* (request: SupervisorAsk.Request) {
+      const session = yield* sessions.get(request.sessionID).pipe(Effect.option)
+      const run = Effect.gen(function* () {
+        const supervisor = yield* ensure()
+        const reply = yield* prompt.prompt({
+          sessionID: supervisor.id,
+          agent: "supervisor",
+          parts: [{ type: "text", text: askMessage(request) }],
+        })
+        const answer =
+          reply.parts
+            .filter((p): p is SessionV1.TextPart => p.type === "text" && !p.synthetic)
+            .map((p) => p.text)
+            .join("\n")
+            .trim() || "(the supervisor gave no answer)"
+        yield* supervisorAsk.answer({ requestID: request.requestID, answer })
+      })
+      yield* (Option.isSome(session) ? store.provide({ directory: session.value.directory }, run) : run)
+    })
+
     yield* Stream.runForEach(
       events.subscribe(SessionDigest.Digest),
       (payload) =>
         handle(payload).pipe(
           Effect.catchCause((cause) => Effect.logWarning("supervisor wake failed", { cause })),
+        ),
+    ).pipe(Effect.forkIn(scope))
+
+    yield* Stream.runForEach(
+      supervisorAsk.requests,
+      (request) =>
+        handleAsk(request).pipe(
+          Effect.catchCause((cause) => Effect.logWarning("supervisor ask failed", { requestID: request.requestID, cause })),
         ),
     ).pipe(Effect.forkIn(scope))
 
@@ -117,7 +161,7 @@ const layer = Layer.effect(
 export const node = LayerNode.make({
   service: Service,
   layer: layer,
-  deps: [Session.node, SessionPrompt.node, EventV2Bridge.node, InstanceStore.node],
+  deps: [Session.node, SessionPrompt.node, EventV2Bridge.node, InstanceStore.node, SupervisorAsk.node],
 })
 
 export * as Supervisor from "./supervisor"

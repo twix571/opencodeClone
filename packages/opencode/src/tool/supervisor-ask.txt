@@ -1,0 +1,4 @@
+Ask the workspace supervisor a question. The supervisor reviews its rules and
+memory and answers. Use it to check whether an action is allowed or how to
+handle something uncertain. The supervisor may take a moment to review before
+answering.
