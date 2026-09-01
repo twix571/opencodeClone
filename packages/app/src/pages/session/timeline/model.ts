@@ -108,6 +108,29 @@ export function selectVisibleUserMessages(messages: UserMessage[], revertMessage
   return boundary < 0 ? messages : messages.slice(0, boundary)
 }
 
+// The rolled-back messages as they existed when the revert was staged. Once a
+// new message is sent the server clears the revert, but the client may briefly
+// hold both the staged revert and the optimistic message; keeping the original
+// snapshot means that new message is never presented as rolled back. The
+// snapshot is only reused while the same message stays at the boundary, so
+// moving the revert to another message always re-derives an exact snapshot.
+export type RolledSnapshot = {
+  boundary: string
+  ids: ReadonlySet<string>
+}
+
+export function selectRolledSnapshot(
+  previous: RolledSnapshot | undefined,
+  revertMessageID: string | undefined,
+  userMessages: UserMessage[],
+): RolledSnapshot | undefined {
+  if (!revertMessageID) return undefined
+  if (previous?.boundary === revertMessageID) return previous
+  const boundary = userMessages.findIndex((message) => message.id === revertMessageID)
+  if (boundary < 0) return undefined
+  return { boundary: revertMessageID, ids: new Set(userMessages.slice(boundary).map((message) => message.id)) }
+}
+
 export async function loadOlderTimeline(input: {
   sessionID: Accessor<string | undefined>
   more: Accessor<boolean>

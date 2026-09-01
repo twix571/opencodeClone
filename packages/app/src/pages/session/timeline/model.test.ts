@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test"
 import type { AssistantMessage, Message, UserMessage } from "@opencode-ai/sdk/v2"
-import { isTimelineReady, loadOlderTimeline, selectUserMessages, selectVisibleUserMessages } from "./model"
+import {
+  isTimelineReady,
+  loadOlderTimeline,
+  selectRolledSnapshot,
+  selectUserMessages,
+  selectVisibleUserMessages,
+} from "./model"
 
 const user = (id: string) => ({ id, role: "user" }) as UserMessage
 const assistant = (id: string) => ({ id, role: "assistant" }) as AssistantMessage
@@ -19,6 +25,36 @@ describe("timeline model", () => {
     expect(isTimelineReady([assistant("msg_2")], true)).toBe(false)
     expect(isTimelineReady([user("msg_1"), assistant("msg_2")], true)).toBe(true)
     expect(isTimelineReady([], false)).toBe(true)
+  })
+
+  test("snapshots the rolled messages when a revert is staged", () => {
+    const messages = [user("msg_1"), user("msg_2"), user("msg_3")]
+    const snapshot = selectRolledSnapshot(undefined, "msg_1", messages)
+    expect(snapshot).toEqual({ boundary: "msg_1", ids: new Set(["msg_1", "msg_2", "msg_3"]) })
+    expect(selectRolledSnapshot(undefined, "msg_missing", messages)).toBeUndefined()
+    expect(selectRolledSnapshot(undefined, undefined, messages)).toBeUndefined()
+  })
+
+  test("keeps the staged snapshot so a new send is not rolled back", () => {
+    const staged = [user("msg_1"), user("msg_2"), user("msg_3")]
+    const snapshot = selectRolledSnapshot(undefined, "msg_1", staged)!
+
+    const afterSend = [...staged, user("msg_4")]
+    const kept = selectRolledSnapshot(snapshot, "msg_1", afterSend)
+    expect(kept).toBe(snapshot)
+    expect([...kept!.ids].sort()).toEqual(["msg_1", "msg_2", "msg_3"])
+  })
+
+  test("re-snapshots when the revert moves to another message", () => {
+    const messages = [user("msg_1"), user("msg_2"), user("msg_3")]
+    const snapshot = selectRolledSnapshot(undefined, "msg_1", messages)!
+    const moved = selectRolledSnapshot(snapshot, "msg_2", messages)
+    expect(moved).toEqual({ boundary: "msg_2", ids: new Set(["msg_2", "msg_3"]) })
+  })
+
+  test("clears the snapshot once the revert is cleared", () => {
+    const snapshot = selectRolledSnapshot(undefined, "msg_1", [user("msg_1"), user("msg_2")])
+    expect(selectRolledSnapshot(snapshot, undefined, [user("msg_1"), user("msg_2")])).toBeUndefined()
   })
 
   test("loads exactly one opaque cursor page", async () => {

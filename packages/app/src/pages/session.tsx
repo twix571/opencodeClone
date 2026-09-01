@@ -72,7 +72,7 @@ import {
 } from "@/pages/session/composer"
 import { createOpenReviewFile, createSessionTabs, createSizing, shouldShowFileTree } from "@/pages/session/helpers"
 import { MessageTimeline } from "@/pages/session/timeline/message-timeline"
-import { createTimelineModel } from "@/pages/session/timeline/model"
+import { createTimelineModel, selectRolledSnapshot, type RolledSnapshot } from "@/pages/session/timeline/model"
 import { type DiffStyle, SessionReviewTab, type SessionReviewTabProps } from "@/pages/session/review-tab"
 import { useSessionLayout } from "@/pages/session/session-layout"
 import { restorePromptModel, syncPromptModel, syncSessionModel } from "@/pages/session/session-model-helpers"
@@ -1890,13 +1890,22 @@ export default function Page() {
     return restoreMutation.mutateAsync(id)
   }
 
+  const rolledSnapshot = createMemo(
+    (previous: RolledSnapshot | undefined) => selectRolledSnapshot(previous, revertMessageID(), userMessages()),
+    undefined,
+  )
+
   const rolled = createMemo(() => {
     const id = revertMessageID()
     if (!id) return []
-    const index = userMessages().findIndex((item) => item.id === id)
+    const messages = userMessages()
+    const index = messages.findIndex((item) => item.id === id)
     if (index < 0) return []
-    return userMessages()
+    const snapshot = rolledSnapshot()
+    if (!snapshot) return []
+    return messages
       .slice(index)
+      .filter((item) => snapshot.ids.has(item.id))
       .map((item) => ({ id: item.id, text: line(item.id) }))
   })
 
