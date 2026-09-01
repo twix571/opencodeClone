@@ -1,0 +1,69 @@
+# Fix Log
+
+Chronological log of bugs fixed in this workspace and how they were resolved.
+
+## 1. Revert dock shows newly sent messages (client)
+
+**Commit:** `aac918711c fix(app): keep newly sent messages out of the revert dock`
+
+**Symptoms:** After rolling a message back, sending a new message briefly showed the new
+message inside the "rolled back messages" dock.
+
+**Root cause:** The `rolled` memo in `packages/app/src/pages/session.tsx` sliced
+`userMessages()` from the revert boundary. The optimistic new message was added to
+`sync().data.message` before the server confirmed the prompt, so it landed inside the
+rolled slice while the revert was still staged client-side. The server self-corrected
+(`revert.cleanup` then `createUserMessage`), so the defect was transient but visible.
+
+**Fix:** Snapshot the rolled message IDs when the revert is staged and filter `rolled` to
+that snapshot. The snapshot is reused only while the same message stays at the boundary,
+so a newly sent message is never presented as rolled back.
+
+- `packages/app/src/pages/session/timeline/model.ts` — added `selectRolledSnapshot`
+  returning a `{ boundary, ids }` snapshot (pure, testable).
+- `packages/app/src/pages/session.tsx` — `rolled` now filters by the snapshot.
+- `packages/app/src/pages/session/timeline/model.test.ts` — 4 regression tests.
+
+**Verification:** `bun test --conditions=solid --preload ./happydom.ts` (app unit suite);
+`bun typecheck` clean.
+
+## 2. Worktree sessions fail to start: @opencode-ai/plugin install
+
+**Commit:** `beb52204f4 fix(core): fall back to published @opencode-ai/plugin when the pinned preview version is unavailable`
+
+**Symptoms:** Sessions placed in a worktree (e.g. supervisor subagents) errored immediately
+with `Cannot find package '@opencode-ai/plugin'` when loading `.opencode/tool/*.ts` files.
+
+**Root cause:** Config loading installs `@opencode-ai/plugin` at `InstallationVersion`
+(`packages/opencode/src/config/config.ts`). For builds compiled from a non-publishing
+branch the version is a timestamped preview such as `0.0.0-combined-<ts>` that was never
+published to npm (`packages/script/src/index.ts` derives the channel from the git branch),
+so the background install failed and the tool import failed at runtime.
+
+**Fix:** `Npm.install` in `packages/core/src/npm.ts` now retries a versioned install without
+the version when it fails, landing on the published package. Verified the worktree
+`.opencode/node_modules/@opencode-ai/plugin` resolves to `1.18.25`.
+
+**Verification:** arborist reproduced the failure with the pinned version and the success
+with the fallback; `bun typecheck` clean in `packages/core`.
+
+## 3. Session tool schema rejected by the model provider
+
+**Commit:** `90a14b7f4e fix(opencode): give the session tool a flat object schema`
+
+**Symptoms:** Every request failed with
+`Invalid schema for function 'session': schema must be a JSON Schema of 'type: "object"', got 'type: null'.`
+
+**Root cause:** The built-in `session` tool declared `Schema.Union([ListParams, GetParams])`.
+`ToolJsonSchema.fromTool` turned that into an `anyOf` schema with no top-level `type`, which
+the OpenAI-compatible provider (deepseek) rejects. No other builtin tool used a top-level
+union.
+
+**Fix:** Flattened `Parameters` into a single `Schema.Struct` with an `action` literal
+(`"list" | "get"`) plus optional fields, matching every other builtin tool. The `get`
+handler validates that `sessionID` is present.
+
+- `packages/opencode/src/tool/session.ts` — flat `Schema.Struct`, `get` requires `sessionID`.
+
+**Verification:** confirmed the produced JSON Schema now has `"type": "object"`;
+`bun typecheck` clean in `packages/opencode`.
