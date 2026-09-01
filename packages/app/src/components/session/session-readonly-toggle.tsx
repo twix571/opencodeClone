@@ -29,6 +29,8 @@ export function SessionReadOnlyToggle(props: SessionReadOnlyToggleProps) {
     })
   }
 
+  const icon = createMemo(() => (readOnly() ? "shield-x" : "shield"))
+
   const label = createMemo(() =>
     readOnly() ? language.t("session.readOnly.disable") : language.t("session.readOnly.enable"),
   )
@@ -37,7 +39,7 @@ export function SessionReadOnlyToggle(props: SessionReadOnlyToggleProps) {
     return (
       <TooltipV2 value={label()} placement={props.placement ?? "bottom"}>
         <IconButtonV2
-          icon={<Icon name="shield" />}
+          icon={<Icon name={icon()} />}
           variant="ghost-muted"
           size="large"
           onClick={toggle}
@@ -51,7 +53,7 @@ export function SessionReadOnlyToggle(props: SessionReadOnlyToggleProps) {
   return (
     <Tooltip value={label()} placement={props.placement ?? "bottom"}>
       <IconButton
-        icon="shield"
+        icon={icon()}
         variant="ghost"
         class="size-6 rounded-md"
         onClick={toggle}
