@@ -48,6 +48,32 @@ import { SessionMessage } from "@opencode-ai/schema/session-message"
 const parentTitlePrefix = "New session - "
 const childTitlePrefix = "Child session - "
 
+/**
+ * Default-deny ruleset applied on top of an agent's permissions for sessions
+ * created read-only. Read-only sessions can observe the workspace and delegate
+ * work but cannot modify anything themselves: no edit/write/apply_patch, no
+ * shell, no worktree management. Placed last in a merged ruleset so its deny
+ * wins over the agent's default allows.
+ */
+export const readOnlyRules: PermissionV1.Rule[] = [
+  { permission: "*", pattern: "*", action: "deny" },
+  { permission: "read", pattern: "*", action: "allow" },
+  { permission: "grep", pattern: "*", action: "allow" },
+  { permission: "glob", pattern: "*", action: "allow" },
+  { permission: "list", pattern: "*", action: "allow" },
+  { permission: "delegate", pattern: "*", action: "allow" },
+  { permission: "task", pattern: "*", action: "allow" },
+  { permission: "question", pattern: "*", action: "allow" },
+  { permission: "session", pattern: "*", action: "allow" },
+  { permission: "supervisor_ask", pattern: "*", action: "allow" },
+  { permission: "websearch", pattern: "*", action: "allow" },
+  { permission: "webfetch", pattern: "*", action: "allow" },
+  { permission: "skill", pattern: "*", action: "allow" },
+  { permission: "lsp", pattern: "*", action: "allow" },
+  { permission: "todo", pattern: "*", action: "allow" },
+  { permission: "external_directory", pattern: "*", action: "allow" },
+]
+
 export function isDefaultTitle(title: string) {
   return new RegExp(
     `^(${parentTitlePrefix}|${childTitlePrefix})\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$`,
@@ -108,6 +134,7 @@ export function fromRow(row: SessionRow): Info {
     metadata: row.metadata ?? undefined,
     revert,
     permission: row.permission ? [...row.permission] : undefined,
+    readOnly: row.read_only ?? undefined,
     time: {
       created: row.time_created,
       updated: row.time_updated,
@@ -151,6 +178,7 @@ export function toRow(info: Info) {
         }
       : null,
     permission: info.permission,
+    read_only: info.readOnly,
     time_created: info.time.created,
     time_updated: info.time.updated,
     time_compacting: info.time.compacting,
@@ -240,6 +268,7 @@ export const Info = Schema.Struct({
   metadata: optional(Metadata),
   time: Time,
   permission: optional(PermissionV1.Ruleset),
+  readOnly: optional(Schema.Boolean),
   revert: optional(Revert),
 }).annotate({ identifier: "Session" })
 export type Info = Types.DeepMutable<Schema.Schema.Type<typeof Info>>
@@ -265,6 +294,7 @@ export const CreateInput = Schema.optional(
     model: Schema.optional(Model),
     metadata: Schema.optional(Metadata),
     permission: Schema.optional(PermissionV1.Ruleset),
+    readOnly: Schema.optional(Schema.Boolean),
     workspaceID: Schema.optional(WorkspaceV2.ID),
   }),
 )
@@ -420,6 +450,7 @@ export interface Interface {
     model?: Schema.Schema.Type<typeof Model>
     metadata?: typeof Metadata.Type
     permission?: PermissionV1.Ruleset
+    readOnly?: boolean
     workspaceID?: WorkspaceV2.ID
   }) => Effect.Effect<Info>
   readonly fork: (input: { sessionID: SessionID; messageID?: MessageID }) => Effect.Effect<Info, NotFound>
@@ -435,6 +466,7 @@ export interface Interface {
     time: number
   }) => Effect.Effect<void>
   readonly setPermission: (input: { sessionID: SessionID; permission: PermissionV1.Ruleset }) => Effect.Effect<void>
+  readonly setReadOnly: (input: { sessionID: SessionID; readOnly: boolean }) => Effect.Effect<void>
   readonly setRevert: (input: {
     sessionID: SessionID
     revert: Info["revert"]
@@ -481,6 +513,7 @@ export type Patch = Omit<Partial<Info>, "time" | "share" | "summary" | "revert" 
   summary?: Info["summary"] | null
   revert?: Info["revert"] | null
   permission?: Info["permission"] | null
+  readOnly?: Info["readOnly"]
 }
 
 const layer: Layer.Layer<
@@ -507,6 +540,7 @@ const layer: Layer.Layer<
       path?: string
       metadata?: typeof Metadata.Type
       permission?: PermissionV1.Ruleset
+      readOnly?: boolean
     }) {
       const ctx = yield* InstanceState.context
       const result: Info = {
@@ -523,6 +557,7 @@ const layer: Layer.Layer<
         model: input.model,
         metadata: input.metadata,
         permission: input.permission ? [...input.permission] : undefined,
+        readOnly: input.readOnly,
         cost: 0,
         tokens: EmptyTokens,
         time: {
@@ -671,6 +706,7 @@ const layer: Layer.Layer<
       model?: Schema.Schema.Type<typeof Model>
       metadata?: typeof Metadata.Type
       permission?: PermissionV1.Ruleset
+      readOnly?: boolean
       workspaceID?: WorkspaceV2.ID
     }) {
       const ctx = yield* InstanceState.context
@@ -684,6 +720,7 @@ const layer: Layer.Layer<
         model: input?.model,
         metadata: input?.metadata,
         permission: input?.permission,
+        readOnly: input?.readOnly,
         workspaceID: input?.workspaceID ?? workspace,
       })
     })
@@ -698,6 +735,7 @@ const layer: Layer.Layer<
         workspaceID: original.workspaceID,
         title,
         metadata: structuredClone(original.metadata),
+        readOnly: original.readOnly,
       })
       const msgs = yield* messages({ sessionID: input.sessionID })
       const idMap = new Map<string, MessageID>()
@@ -742,6 +780,7 @@ const layer: Layer.Layer<
           summary: info.summary === null ? undefined : (info.summary ?? current.summary),
           revert: info.revert === null ? undefined : (info.revert ?? current.revert),
           permission: info.permission === null ? undefined : (info.permission ?? current.permission),
+          readOnly: info.readOnly ?? current.readOnly,
         } as Info
         yield* events.publish(SessionV1.Event.Updated, { sessionID, info: next })
       })
@@ -782,6 +821,13 @@ const layer: Layer.Layer<
       yield* patch(input.sessionID, { permission: [...input.permission], time: { updated: Date.now() } }).pipe(
         Effect.orDie,
       )
+    })
+
+    const setReadOnly = Effect.fn("Session.setReadOnly")(function* (input: {
+      sessionID: SessionID
+      readOnly: boolean
+    }) {
+      yield* patch(input.sessionID, { readOnly: input.readOnly, time: { updated: Date.now() } }).pipe(Effect.orDie)
     })
 
     const setRevert = Effect.fn("Session.setRevert")(function* (input: {
@@ -915,6 +961,7 @@ const layer: Layer.Layer<
       setMetadata,
       setAgentModel,
       setPermission,
+      setReadOnly,
       setRevert,
       clearRevert,
       setSummary,

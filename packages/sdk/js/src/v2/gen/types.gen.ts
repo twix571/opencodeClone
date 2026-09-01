@@ -214,6 +214,7 @@ export type Session = {
     archived?: number
   }
   permission?: PermissionRuleset
+  readOnly?: boolean
   revert?: {
     messageID: string
     partID?: string
@@ -2290,6 +2291,7 @@ export type GlobalSession = {
     archived?: number
   }
   permission?: PermissionRuleset
+  readOnly?: boolean
   revert?: {
     messageID: string
     partID?: string
@@ -9607,6 +9609,7 @@ export type SessionCreateData = {
       [key: string]: unknown
     }
     permission?: PermissionRuleset
+    readOnly?: boolean
     workspaceID?: string
   }
   path?: never
@@ -9740,6 +9743,7 @@ export type SessionUpdateData = {
       [key: string]: unknown
     }
     permission?: PermissionRuleset
+    readOnly?: boolean
     time?: {
       archived?: number
     }

@@ -82,6 +82,8 @@ IMPORTANT:
 
 const STRUCTURED_OUTPUT_SYSTEM_PROMPT = `IMPORTANT: The user has requested structured output. You MUST use the StructuredOutput tool to provide your final response. Do NOT respond with plain text - you MUST call the StructuredOutput tool with your answer formatted according to the schema.`
 
+const READ_ONLY_SYSTEM_PROMPT = `This session is READ-ONLY. You cannot modify the workspace yourself: editing, writing, applying patches, running shell commands, and managing worktrees are all blocked. You may read, search, browse, ask the user questions, and delegate work to subagents (which can make changes). Plan and coordinate through delegates rather than editing directly.`
+
 function mcpResourceBase64Size(value: string) {
   const trimmed = value.replace(/\s/g, "")
   const padding = trimmed.endsWith("==") ? 2 : trimmed.endsWith("=") ? 1 : 0
@@ -1271,6 +1273,7 @@ const layer = Layer.effect(
               ...instructions,
               ...(mcpInstructions ? [mcpInstructions] : []),
               ...(skills ? [skills] : []),
+              ...(session.readOnly ? [READ_ONLY_SYSTEM_PROMPT] : []),
             ]
             const format = lastUser.format ?? { type: "text" as const }
             if (format.type === "json_schema") system.push(STRUCTURED_OUTPUT_SYSTEM_PROMPT)
