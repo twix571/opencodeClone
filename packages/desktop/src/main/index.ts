@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import { mkdirSync, rmSync } from "node:fs"
 import * as http from "node:http"
@@ -92,6 +93,15 @@ async function killSidecar() {
   await current.stop()
 }
 
+function relaunchDevDesktop() {
+  const repoRoot = join(app.getAppPath(), "..", "..")
+  const script = join(repoRoot, "packages", "desktop", "scripts", "restart-dev.ts")
+  logger.log("relaunching dev desktop via restart script", { script })
+  const child = spawn("bun", [script], { cwd: repoRoot, detached: true, stdio: "ignore" })
+  child.unref()
+  child.on("error", (error) => logger.error("failed to start dev desktop restart script", { error: error.message }))
+}
+
 function ensureLoopbackNoProxy() {
   const loopback = ["127.0.0.1", "localhost", "::1"]
   const upsert = (key: string) => {
@@ -171,8 +181,13 @@ const main = Effect.gen(function* () {
   const relaunch = () => {
     setAppQuitting()
     void stopSidecars().finally(() => {
-      app.relaunch()
-      app.quit()
+      if (app.isPackaged) {
+        app.relaunch()
+        app.quit()
+      } else {
+        relaunchDevDesktop()
+        app.quit()
+      }
     })
   }
 
