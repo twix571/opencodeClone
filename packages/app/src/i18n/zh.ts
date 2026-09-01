@@ -809,6 +809,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "本地",
   "session.new.workspace.local": "本地仓库",
   "session.new.workspace.existing": "工作区…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "无 Git",
   "session.new.lastModified": "最后修改",
   "session.header.search.placeholder": "搜索 {{project}}",

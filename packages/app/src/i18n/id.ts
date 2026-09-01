@@ -845,6 +845,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Lokal",
   "session.new.workspace.local": "Repositori lokal",
   "session.new.workspace.existing": "Ruang kerja…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Tanpa Git",
   "session.new.lastModified": "Terakhir diubah",
 

@@ -783,6 +783,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Helyi",
   "session.new.workspace.local": "Helyi adattár",
   "session.new.workspace.existing": "Munkaterület…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Nincs Git",
   "session.new.lastModified": "Utoljára módosítva",
   "session.header.search.placeholder": "Keresés {{project}}",

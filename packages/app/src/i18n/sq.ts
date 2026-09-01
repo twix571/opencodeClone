@@ -779,6 +779,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Lokale",
   "session.new.workspace.local": "Depo lokale",
   "session.new.workspace.existing": "Hapësira e punës…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Jo Git",
   "session.new.lastModified": "Ndryshuar së fundi",
   "session.header.search.placeholder": "Kërko {{project}}",

@@ -782,6 +782,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Lokalno",
   "session.new.workspace.local": "Lokalno skladišče",
   "session.new.workspace.existing": "Delovni prostor…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Ne Git",
   "session.new.lastModified": "Nazadnje spremenjeno",
   "session.header.search.placeholder": "Išči {{project}}",

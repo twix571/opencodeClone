@@ -778,6 +778,7 @@ export const dict: Record<string, string> = {
   "session.new.workspace.triggerLocal": "स्थानीय",
   "session.new.workspace.local": "स्थानीय भण्डार",
   "session.new.workspace.existing": "कार्यस्थल…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "छैन Git",
   "session.new.lastModified": "पछिल्लो पटक परिमार्जन गरिएको",
   "session.header.search.placeholder": "{{project}} खोज्नुहोस्",

@@ -11,6 +11,7 @@ export function PromptWorkspaceSelector(props: {
   projectRoot: string
   workspaces: string[]
   branch?: string
+  isBusy?: (workspace: string) => boolean
   onChange: (value: string) => void
   onDone: () => void
 }) {
@@ -77,10 +78,13 @@ export function PromptWorkspaceSelector(props: {
                   <MenuV2.SubContent class="max-w-[200px]">
                     <For each={props.workspaces}>
                       {(workspace) => (
-                        <MenuV2.Item onSelect={() => select(workspace)}>
+                        <MenuV2.Item onSelect={() => select(workspace)} disabled={props.isBusy?.(workspace)}>
                           <IconV2 name="workspace-isolated" />
                           <span class="min-w-0 flex-1 truncate">{getFilename(workspace)}</span>
-                          <Show when={selected() === workspace}>
+                          <Show when={props.isBusy?.(workspace)}>
+                            <span class="shrink-0 text-v2-text-text-faint">{language.t("session.new.workspace.inUse")}</span>
+                          </Show>
+                          <Show when={!props.isBusy?.(workspace) && selected() === workspace}>
                             <Icon name="check" size="small" class="shrink-0" />
                           </Show>
                         </MenuV2.Item>

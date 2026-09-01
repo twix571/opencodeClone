@@ -788,6 +788,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "ލޯކަލް",
   "session.new.workspace.local": "ލޯކަލް ރިޕޮޒިޓަރީ",
   "session.new.workspace.existing": "ވޯކްސްޕޭސް...",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "އެއްވެސް Git އެއް ނެތެވެ",
   "session.new.lastModified": "އެންމެ ފަހުން ބަދަލުކުރީ",
   "session.header.search.placeholder": "{{project}} ހޯދުން",

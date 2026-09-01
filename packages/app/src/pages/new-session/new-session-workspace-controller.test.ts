@@ -7,22 +7,22 @@ import {
 
 describe("new session workspace selection", () => {
   test("uses main when the workspace bar is unavailable", () => {
-    expect(
-      resolveNewSessionWorktree({
-        enabled: false,
-        selected: "/project/feature",
-        directory: "/project/feature",
-        projectWorktree: "/project",
-      }),
-    ).toBe("main")
+    expect(resolveNewSessionWorktree({ enabled: false, selected: "/project/feature" })).toBe("main")
   })
 
-  test("derives an existing worktree from the current directory", () => {
-    expect(
-      resolveNewSessionWorktree({ enabled: true, directory: "/project/feature", projectWorktree: "/project" }),
-    ).toBe("/project/feature")
-    expect(resolveNewSessionWorktree({ enabled: true, directory: "/project", projectWorktree: "/project" })).toBe(
-      "main",
+  test("defaults to a new worktree when nothing is selected", () => {
+    expect(resolveNewSessionWorktree({ enabled: true })).toBe("create")
+    expect(resolveNewSessionWorktree({ enabled: true, busy: () => true })).toBe("create")
+  })
+
+  test("does not reuse a busy explicitly selected worktree", () => {
+    const busy = (worktree: string) => worktree === "/project/feature"
+    expect(resolveNewSessionWorktree({ enabled: true, selected: "/project/feature", busy })).toBe("create")
+  })
+
+  test("keeps a non-busy explicitly selected worktree", () => {
+    expect(resolveNewSessionWorktree({ enabled: true, selected: "/project/feature", busy: () => false })).toBe(
+      "/project/feature",
     )
   })
 

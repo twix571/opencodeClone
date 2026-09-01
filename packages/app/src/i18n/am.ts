@@ -763,6 +763,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "አካባቢ",
   "session.new.workspace.local": "አካባቢያዊ ማከማቻ",
   "session.new.workspace.existing": "Workspace…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "ያለ Git",
   "session.new.lastModified": "መጨረሻ የተሻሻለው",
   "session.header.search.placeholder": "ፍለጋ {{project}}",

@@ -1023,6 +1023,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "로컬",
   "session.new.workspace.local": "로컬 저장소",
   "session.new.workspace.existing": "작업 공간…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Git 없음",
 
   "sidebar.empty.title": "열린 프로젝트 없음",

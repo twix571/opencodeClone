@@ -779,6 +779,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "маҳаллӣ",
   "session.new.workspace.local": "Анбори маҳаллӣ",
   "session.new.workspace.existing": "Фазои корӣ…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Не Git",
   "session.new.lastModified": "Охирин тағир дода шудааст",
   "session.header.search.placeholder": "Ҷустуҷӯ {{project}}",

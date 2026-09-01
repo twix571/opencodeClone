@@ -784,6 +784,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Τοπική",
   "session.new.workspace.local": "Τοπικό αποθετήριο",
   "session.new.workspace.existing": "Χώρος εργασίας…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Χωρίς Git",
   "session.new.lastModified": "Τελευταία τροποποίηση",
   "session.header.search.placeholder": "Αναζήτηση {{project}}",

@@ -781,6 +781,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Lokāli",
   "session.new.workspace.local": "Lokālais repozitorijs",
   "session.new.workspace.existing": "Darbtelpa…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Nav Git",
   "session.new.lastModified": "Pēdējoreiz mainīts",
   "session.header.search.placeholder": "Meklēt {{project}}",

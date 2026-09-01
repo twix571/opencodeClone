@@ -8,12 +8,10 @@ const workspaceBarEnabled = import.meta.env.VITE_OPENCODE_CHANNEL !== "prod"
 export function resolveNewSessionWorktree(input: {
   enabled: boolean
   selected?: string
-  directory: string
-  projectWorktree?: string
+  busy?: (worktree: string) => boolean
 }) {
   if (!input.enabled) return "main"
-  if (input.selected) return input.selected
-  if (input.projectWorktree && input.directory !== input.projectWorktree) return input.directory
+  if (input.selected && !input.busy?.(input.selected)) return input.selected
   return "create"
 }
 
@@ -37,12 +35,17 @@ export function createNewSessionWorkspaceController() {
   const serverSync = useServerSync()
   const [worktree, setWorktree] = createSignal<string>()
   const visible = createMemo(() => workspaceBarEnabled && sync().project?.vcs === "git")
+  // A worktree is busy when another session is actively working in it, so it
+  // must not be reused for a new session (two sessions in one tree collide).
+  const busy = (directory: string) => {
+    const child = serverSync().child(directory)[0]
+    return child.session.some((session) => child.session_working(session.id))
+  }
   const value = createMemo(() =>
     resolveNewSessionWorktree({
       enabled: visible(),
       selected: worktree(),
-      directory: sdk().directory,
-      projectWorktree: sync().project?.worktree,
+      busy,
     }),
   )
   const projectRoot = createMemo(() => sync().project?.worktree ?? sdk().directory)
@@ -58,6 +61,7 @@ export function createNewSessionWorkspaceController() {
   return {
     selection: {
       value,
+      busy,
       reset: () => setWorktree(),
       set: (worktree: string) =>
         setWorktree(normalizeNewSessionWorktree(worktree, sdk().directory, sync().project?.worktree)),

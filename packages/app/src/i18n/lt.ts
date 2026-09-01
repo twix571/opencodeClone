@@ -789,6 +789,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Vietinis",
   "session.new.workspace.local": "Vietinė saugykla",
   "session.new.workspace.existing": "Darbo sritis…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Nėra Git",
   "session.new.lastModified": "Paskutinis modifikuotas",
   "session.header.search.placeholder": "Ieškoti {{project}}",

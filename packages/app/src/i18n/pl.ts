@@ -769,6 +769,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Lokalnie",
   "session.new.workspace.local": "Lokalne repozytorium",
   "session.new.workspace.existing": "Przestrzeń robocza…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Brak Git",
   "session.new.lastModified": "Ostatnio zmodyfikowano",
   "session.header.search.placeholder": "Szukaj {{project}}",

@@ -768,6 +768,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "محلي",
   "session.new.workspace.local": "المستودع المحلي",
   "session.new.workspace.existing": "مساحة عمل…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "لا يوجد Git",
   "session.new.lastModified": "آخر تعديل",
   "session.header.search.placeholder": "بحث {{project}}",

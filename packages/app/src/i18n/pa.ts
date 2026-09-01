@@ -785,6 +785,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "مقامی",
   "session.new.workspace.local": "مقامی مخزن",
   "session.new.workspace.existing": "کم دی تھاں...",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Git نئیں",
   "session.new.lastModified": "آخری ترمیم",
   "session.header.search.placeholder": "{{project}} لبھو",

@@ -1236,6 +1236,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Lokalt",
   "session.new.workspace.local": "Lokalt depot",
   "session.new.workspace.existing": "Arbeidsområde…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Ingen Git",
 
   "sidebar.empty.title": "Ingen åpne prosjekter",

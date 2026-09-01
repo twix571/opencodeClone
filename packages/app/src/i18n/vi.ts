@@ -786,6 +786,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Cục bộ",
   "session.new.workspace.local": "Kho lưu trữ cục bộ",
   "session.new.workspace.existing": "Không gian làm việc…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Không dùng Git",
   "session.new.lastModified": "Sửa đổi lần cuối",
   "session.header.search.placeholder": "Tìm kiếm {{project}}",

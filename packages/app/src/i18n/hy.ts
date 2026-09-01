@@ -781,6 +781,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Տեղական",
   "session.new.workspace.local": "Տեղական պահոց",
   "session.new.workspace.existing": "Աշխատանքային տարածք…",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Առանց Git-ի",
   "session.new.lastModified": "Վերջին փոփոխությունը",
   "session.header.search.placeholder": "Որոնում {{project}}",

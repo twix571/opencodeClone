@@ -776,6 +776,7 @@ export const dict = {
   "session.new.workspace.triggerLocal": "Lokal",
   "session.new.workspace.local": "Lokal goymsla",
   "session.new.workspace.existing": "Workspace...",
+  "session.new.workspace.inUse": "In use",
   "session.new.git.none": "Nei Git",
   "session.new.lastModified": "Seinast broytt",
   "session.header.search.placeholder": "Leita {{project}}",
