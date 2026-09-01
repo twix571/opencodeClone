@@ -1,5 +1,6 @@
 import { Agent } from "@/agent/agent"
 import { SessionV1 } from "@opencode-ai/core/v1/session"
+import { PermissionV1 } from "@opencode-ai/core/v1/permission"
 import { Provider } from "@/provider/provider"
 import { ProviderTransform } from "@/provider/transform"
 import { MCP } from "@/mcp"
@@ -15,6 +16,7 @@ import type { TaskPromptOps } from "@/tool/task"
 import { type Tool as AITool, tool, jsonSchema, type ToolExecutionOptions, asSchema } from "ai"
 import { Effect } from "effect"
 import { MessageV2 } from "./message-v2"
+import { Proactive } from "./proactive"
 import { Session } from "./session"
 import { SessionProcessor } from "./processor"
 import { PartID } from "./schema"
@@ -51,12 +53,13 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
   const run = yield* EffectBridge.make()
   const plugin = yield* Plugin.Service
   const permission = yield* Permission.Service
+  const proactive = yield* Proactive.Service
   const registry = yield* ToolRegistry.Service
   const mcp = yield* MCP.Service
   const truncate = yield* Truncate.Service
   const flags = yield* RuntimeFlags.Service
 
-  const context = (args: Record<string, unknown>, options: ToolExecutionOptions): Tool.Context => ({
+  const context = (tool: string, args: Record<string, unknown>, options: ToolExecutionOptions): Tool.Context => ({
     sessionID: input.session.id,
     abort: options.abortSignal!,
     messageID: input.processor.message.id,
@@ -78,19 +81,35 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
           },
         }
       }),
-    ask: (req) =>
-      permission
-        .ask({
-          ...req,
-          sessionID: input.session.id,
-          tool: { messageID: input.processor.message.id, callID: options.toolCallId },
-          ruleset: Permission.merge(
-            input.agent.permission,
-            input.session.permission ?? [],
-            ...(input.session.readOnly ? [Session.readOnlyRules] : []),
-          ),
-        })
-        .pipe(Effect.orDie),
+    ask: (req) => {
+      const ask = permission.ask({
+        ...req,
+        sessionID: input.session.id,
+        tool: { messageID: input.processor.message.id, callID: options.toolCallId },
+        ruleset: Permission.merge(
+          input.agent.permission,
+          input.session.permission ?? [],
+          ...(input.session.readOnly ? [Session.readOnlyRules] : []),
+        ),
+      })
+      return ask.pipe(
+        Effect.tapError((error) => {
+          if (!(error instanceof PermissionV1.DeniedError)) return Effect.void
+          if (input.agent.name === "supervisor") return Effect.void
+          return Effect.gen(function* () {
+            yield* proactive.flag({
+              sessionID: input.session.id,
+              tool,
+              file: fileFromArgs(args),
+              permission: req.permission,
+              action: "deny",
+              reason: error.message,
+            })
+          })
+        }),
+        Effect.orDie,
+      )
+    },
   })
 
   for (const item of yield* registry.tools({
@@ -107,7 +126,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
       execute(args, options) {
         return run.promise(
           Effect.gen(function* () {
-            const ctx = context(args, options)
+            const ctx = context(item.id, args, options)
             yield* plugin.trigger(
               "tool.execute.before",
               { tool: item.id, sessionID: ctx.sessionID, callID: ctx.callID },
@@ -162,7 +181,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
         return run.promise(
           Effect.gen(function* () {
             const parsed = parseListMcpResourcesArgs(args)
-            const ctx = context(toRecord(args), opts)
+            const ctx = context(MCP_RESOURCE_TOOLS.list, toRecord(args), opts)
             const clients = yield* mcp.clients()
             const resourceServers = Object.entries(clients)
               .filter((entry) => !!entry[1].getServerCapabilities()?.resources)
@@ -246,7 +265,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
         return run.promise(
           Effect.gen(function* () {
             const parsed = parseListMcpResourcesArgs(args)
-            const ctx = context(toRecord(args), opts)
+            const ctx = context(MCP_RESOURCE_TOOLS.listTemplates, toRecord(args), opts)
             const clients = yield* mcp.clients()
             const resourceServers = Object.entries(clients)
               .filter((entry) => !!entry[1].getServerCapabilities()?.resources)
@@ -334,7 +353,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
         return run.promise(
           Effect.gen(function* () {
             const parsed = parseReadMcpResourceArgs(args)
-            const ctx = context(toRecord(args), opts)
+            const ctx = context(MCP_RESOURCE_TOOLS.read, toRecord(args), opts)
             const clients = yield* mcp.clients()
             const client = clients[parsed.server]
             if (!client) {
@@ -407,7 +426,7 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
     item.execute = (args, opts) =>
       run.promise(
         Effect.gen(function* () {
-          const ctx = context(args, opts)
+          const ctx = context(key, args, opts)
           yield* plugin.trigger(
             "tool.execute.before",
             { tool: key, sessionID: ctx.sessionID, callID: opts.toolCallId },
@@ -504,6 +523,13 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
 function toRecord(value: unknown) {
   if (isRecord(value)) return value
   return {}
+}
+
+function fileFromArgs(args: Record<string, unknown>) {
+  if (typeof args.filePath === "string") return args.filePath
+  if (typeof args.path === "string") return args.path
+  if (typeof args.file === "string") return args.file
+  return undefined
 }
 
 function parseListMcpResourcesArgs(value: unknown) {

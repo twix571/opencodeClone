@@ -16,6 +16,7 @@ import { PermissionV1 } from "./permission-v1"
 import { Plugin } from "./plugin"
 import { Project } from "./project"
 import { ProjectDirectories } from "./project-directories"
+import { ProactivePing } from "./proactive-ping"
 import { Pty } from "./pty"
 import { Question } from "./question"
 import { QuestionV1 } from "./question-v1"
@@ -77,6 +78,7 @@ export const Definitions = Event.inventory(
   ...SessionStatusEvent.Definitions,
   ...SessionDigest.Definitions,
   ...SessionWrapup.Definitions,
+  ...ProactivePing.Definitions,
   ...QuestionV1.Event.Definitions,
   ...SessionCompactionEvent.Definitions,
   ...VcsEvent.Definitions,
