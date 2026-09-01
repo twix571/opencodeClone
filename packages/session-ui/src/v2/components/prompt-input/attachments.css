@@ -24,6 +24,18 @@
   }
 }
 
+[data-component="prompt-input-v2"].prompt-input-v2-delivery,
+[data-slot="segmented-control-v2"].prompt-input-v2-delivery {
+  width: auto;
+  height: 24px;
+
+  [data-slot="segmented-control-v2-item"] {
+    height: 24px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+}
+
 @supports (animation-timeline: --prompt-input-v2-attachments-scroll) and
   (timeline-scope: --prompt-input-v2-attachments-scroll) {
   [data-component="prompt-input-v2-attachments"] [data-slot="prompt-attachments-scroll"] {

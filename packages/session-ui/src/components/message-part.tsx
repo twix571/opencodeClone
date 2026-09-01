@@ -2073,6 +2073,33 @@ ToolRegistry.register({
       if (props.status === "completed") return taskOutputText(props.output ?? "")
       return ""
     })
+    const childUsage = createMemo(() => {
+      const id = childSessionId()
+      if (!id) return undefined
+      const session = childSession()
+      if (session?.tokens && typeof session.cost === "number") return { tokens: session.tokens, cost: session.cost }
+      const messages = (data.store.message[id] ?? []).filter(
+        (message): message is AssistantMessage => message.role === "assistant",
+      )
+      if (messages.length === 0) return undefined
+      const cost = messages.reduce((sum, message) => sum + (message.cost ?? 0), 0)
+      const tokens = messages.reduce(
+        (acc, message) => {
+          const t = message.tokens
+          if (!t) return acc
+          acc.input += t.input ?? 0
+          acc.output += t.output ?? 0
+          acc.reasoning += t.reasoning ?? 0
+          acc.cache.read += t.cache?.read ?? 0
+          acc.cache.write += t.cache?.write ?? 0
+          return acc
+        },
+        { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+      )
+      const total = tokens.input + tokens.output + tokens.reasoning + tokens.cache.read + tokens.cache.write
+      if (total === 0 && cost === 0) return undefined
+      return { tokens, cost }
+    })
     const start = () => props.time?.start ?? childSession()?.time.created
     const end = () => {
       const id = childSessionId()
@@ -2176,6 +2203,8 @@ ToolRegistry.register({
         start={start()}
         end={end()}
         result={result()}
+        tokens={childUsage()?.tokens}
+        cost={childUsage()?.cost}
       />
     )
   },

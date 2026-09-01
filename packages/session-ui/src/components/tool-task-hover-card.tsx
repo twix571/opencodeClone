@@ -17,6 +17,13 @@ export interface TaskToolHoverCardProps {
   start?: number
   end?: number
   result?: string
+  tokens?: {
+    input: number
+    output: number
+    reasoning: number
+    cache: { read: number; write: number }
+  }
+  cost?: number
 }
 
 function durationText(ms: number, format: Intl.NumberFormat, t: ReturnType<typeof useI18n>["t"]) {
@@ -77,6 +84,24 @@ export function TaskToolHoverCard(props: TaskToolHoverCardProps) {
     return text.length > 240 ? `${text.slice(0, 240).trimEnd()}\u2026` : text
   })
 
+  const totalTokens = createMemo(() => {
+    const t = props.tokens
+    if (!t) return 0
+    return (t.input ?? 0) + (t.output ?? 0) + (t.reasoning ?? 0) + (t.cache?.read ?? 0) + (t.cache?.write ?? 0)
+  })
+
+  const costText = createMemo(() => {
+    const cost = props.cost
+    if (typeof cost !== "number" || !Number.isFinite(cost) || cost <= 0) return ""
+    return new Intl.NumberFormat(i18n.locale(), {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 4,
+    }).format(cost)
+  })
+
+  const hasUsage = createMemo(() => totalTokens() > 0 || !!costText())
+
   const hasMeta = () => !!props.agent || !!props.model
 
   return (
@@ -114,6 +139,22 @@ export function TaskToolHoverCard(props: TaskToolHoverCardProps) {
             </Show>
             <Show when={props.model}>
               <span data-slot="task-hover-model">{props.model}</span>
+            </Show>
+          </div>
+        </Show>
+        <Show when={hasUsage()}>
+          <div data-slot="task-hover-usage">
+            <Show when={totalTokens() > 0}>
+              <span data-slot="task-hover-usage-item">
+                <span data-slot="task-hover-usage-label">{i18n.t("ui.tool.task.hover.tokens")}</span>
+                <span data-slot="task-hover-usage-value">{numfmt().format(totalTokens())}</span>
+              </span>
+            </Show>
+            <Show when={costText()}>
+              <span data-slot="task-hover-usage-item">
+                <span data-slot="task-hover-usage-label">{i18n.t("ui.tool.task.hover.cost")}</span>
+                <span data-slot="task-hover-usage-value">{costText()}</span>
+              </span>
             </Show>
           </div>
         </Show>

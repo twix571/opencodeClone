@@ -1,4 +1,5 @@
 import type { Message, Session } from "@opencode-ai/sdk/v2/client"
+import type { PromptInputV2Delivery } from "@opencode-ai/session-ui/v2/prompt-input"
 import { showToast } from "@/utils/toast"
 import { base64Encode } from "@opencode-ai/core/util/encode"
 import { Binary } from "@opencode-ai/core/util/binary"
@@ -48,6 +49,7 @@ type FollowupSendInput = {
   draft: FollowupDraft
   messageID?: string
   optimisticBusy?: boolean
+  delivery?: PromptInputV2Delivery
   before?: () => Promise<boolean> | boolean
 }
 
@@ -165,12 +167,17 @@ export async function sendFollowupDraft(input: FollowupSendInput) {
       return false
     }
 
+    if (input.delivery === "interrupt") {
+      await input.api.interrupt({ sessionID: input.draft.sessionID }).catch(() => {})
+    }
+
     await input.api.prompt({
       sessionID: input.draft.sessionID,
       id: messageID,
       agent: input.draft.agent,
       model: input.draft.model,
       variant: input.draft.variant,
+      delivery: input.delivery === "queue" ? "queue" : "steer",
       legacyParts: requestParts,
       text: requestParts.flatMap((part) => (part.type === "text" ? [part.text] : [])).join("\n"),
       files: requestParts.flatMap((part) => {
@@ -228,6 +235,7 @@ type PromptSubmitInput = {
   onQueue?: (draft: FollowupDraft) => void
   onAbort?: () => void
   onSubmit?: () => void
+  delivery?: Accessor<PromptInputV2Delivery>
   model?: ModelSelection
 }
 
@@ -626,6 +634,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       draft,
       messageID,
       optimisticBusy: sessionDirectory === projectDirectory,
+      delivery: input.delivery?.(),
       before: waitForWorktree,
     }).catch((err) => {
       pending.delete(pendingKey(session.id))

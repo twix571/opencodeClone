@@ -9,6 +9,7 @@ import { Icon as IconV2 } from "@opencode-ai/ui/v2/icon"
 import { IconButtonV2 } from "@opencode-ai/ui/v2/icon-button-v2"
 import { KeybindV2 } from "@opencode-ai/ui/v2/keybind-v2"
 import { MenuV2 } from "@opencode-ai/ui/v2/menu-v2"
+import { SegmentedControlItemV2, SegmentedControlV2 } from "@opencode-ai/ui/v2/segmented-control-v2"
 import { TooltipV2 } from "@opencode-ai/ui/v2/tooltip-v2"
 import { AttachmentCardV2 } from "../attachment-card-v2"
 import { CommentCardV2 } from "../comment-card-v2"
@@ -21,7 +22,11 @@ import type {
   PromptInputV2Prompt,
   PromptInputV2Suggestion,
 } from "./types"
-import type { PromptInputV2Interaction, PromptInputV2SelectControl } from "./interaction"
+import type {
+  PromptInputV2Delivery,
+  PromptInputV2Interaction,
+  PromptInputV2SelectControl,
+} from "./interaction"
 import "./attachments.css"
 
 export type {
@@ -31,6 +36,7 @@ export type {
   PromptInputV2PersistedState,
   PromptInputV2Suggestion,
 } from "./types"
+export type { PromptInputV2Delivery } from "./interaction"
 
 export type PromptInputV2Mode = "normal" | "shell"
 
@@ -260,6 +266,17 @@ export function PromptInputV2(props: PromptInputV2Props) {
               onCreateCustom={props.onCreateCustom}
             />
           </div>
+          <PromptInputV2DeliverySwitch
+            delivery={view.submit.delivery}
+            setDelivery={view.submit.setDelivery}
+            working={view.submit.working}
+            label={i18n.t("ui.promptInput.delivery")}
+            options={[
+              { id: "steer", label: i18n.t("ui.promptInput.delivery.steer") },
+              { id: "queue", label: i18n.t("ui.promptInput.delivery.queue") },
+              { id: "interrupt", label: i18n.t("ui.promptInput.delivery.interrupt") },
+            ]}
+          />
           <PromptInputV2SubmitButton
             mode={state.mode}
             stopping={view.submit.stopping()}
@@ -754,6 +771,31 @@ export function PromptInputV2SubmitButton(props: {
         }}
       />
     </TooltipV2>
+  )
+}
+
+export function PromptInputV2DeliverySwitch(props: {
+  delivery?: Accessor<PromptInputV2Delivery>
+  setDelivery?: (delivery: PromptInputV2Delivery) => void
+  working?: Accessor<boolean>
+  label: string
+  options: { id: PromptInputV2Delivery; label: string }[]
+}) {
+  return (
+    <Show when={!!props.working?.() && !!props.delivery && !!props.setDelivery}>
+      <SegmentedControlV2
+        value={props.delivery?.()}
+        aria-label={props.label}
+        class="prompt-input-v2-delivery"
+        onChange={(next) => {
+          if (next === "steer" || next === "queue" || next === "interrupt") props.setDelivery?.(next)
+        }}
+      >
+        <For each={props.options}>
+          {(option) => <SegmentedControlItemV2 value={option.id}>{option.label}</SegmentedControlItemV2>}
+        </For>
+      </SegmentedControlV2>
+    </Show>
   )
 }
 

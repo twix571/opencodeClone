@@ -86,6 +86,32 @@
   text-overflow: ellipsis;
 }
 
+[data-slot="task-hover-usage"] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+[data-slot="task-hover-usage-item"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+[data-slot="task-hover-usage-label"] {
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="task-hover-usage-value"] {
+  color: var(--v2-text-text-base);
+  white-space: nowrap;
+}
+
 [data-slot="task-hover-result"] {
   display: flex;
   flex-direction: column;

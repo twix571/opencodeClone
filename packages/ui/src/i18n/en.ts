@@ -140,6 +140,10 @@ export const dict: Record<string, string> = {
   "ui.promptInput.createCustom": "Create custom...",
   "ui.promptInput.send": "Send",
   "ui.promptInput.stop": "Stop",
+  "ui.promptInput.delivery": "Delivery",
+  "ui.promptInput.delivery.steer": "Steer",
+  "ui.promptInput.delivery.queue": "Queue",
+  "ui.promptInput.delivery.interrupt": "Interrupt",
 
   "ui.tabs.close": "Close tab",
 
@@ -175,6 +179,8 @@ export const dict: Record<string, string> = {
   "ui.tool.task.hover.in": "in {{time}}",
   "ui.tool.task.hover.background": "Background",
   "ui.tool.task.hover.result": "Result",
+  "ui.tool.task.hover.tokens": "Tokens",
+  "ui.tool.task.hover.cost": "Cost",
 
   "ui.basicTool.called": "Called `{{tool}}`",
   "ui.toolErrorCard.failed": "Failed",

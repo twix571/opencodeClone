@@ -26,6 +26,8 @@ export type PromptInputV2SelectControl = {
   keybind?: Accessor<string[]>
 }
 
+export type PromptInputV2Delivery = "steer" | "queue" | "interrupt"
+
 export type PromptInputV2ViewConfig = {
   placeholder?: Accessor<string>
   add?: {
@@ -37,6 +39,8 @@ export type PromptInputV2ViewConfig = {
   submit: {
     stopping: Accessor<boolean>
     working?: Accessor<boolean>
+    delivery?: Accessor<PromptInputV2Delivery>
+    setDelivery?: (delivery: PromptInputV2Delivery) => void
     onSubmit: () => void
     onStop: () => void
   }
