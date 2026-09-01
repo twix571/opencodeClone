@@ -144,11 +144,23 @@ const layer = Layer.effect(
       if (!canWrite) return
 
       const add = input?.add.map((pkg) => [pkg.name, pkg.version].filter(Boolean).join("@")) ?? []
+      // Local dev builds pin @opencode-ai/plugin to a preview version that is
+      // never published (e.g. 0.0.0-combined-<timestamp>), so a versioned
+      // install can fail. Retry without the version to land on the published
+      // package when that happens.
+      const bare = input?.add.map((pkg) => pkg.name) ?? []
+      const reifyAdd = (specs: string[]) =>
+        reify({ add: specs, dir }).pipe(
+          Effect.catchIf(
+            (error): error is InstallFailedError => error instanceof InstallFailedError && specs.some((spec) => spec.includes("@")),
+            () => reify({ add: bare, dir }),
+          ),
+        )
       if (
         yield* Effect.gen(function* () {
           const nodeModulesExists = yield* afs.existsSafe(path.join(dir, "node_modules"))
           if (!nodeModulesExists) {
-            yield* reify({ add, dir })
+            yield* reifyAdd(add)
             return true
           }
           return false
@@ -180,7 +192,7 @@ const layer = Layer.effect(
 
         for (const name of declared) {
           if (!locked.has(name)) {
-            yield* reify({ dir, add })
+            yield* reifyAdd(add)
             return
           }
         }
