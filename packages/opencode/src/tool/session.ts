@@ -8,8 +8,13 @@ import { SessionID } from "../session/schema"
 
 const TOOL_OUTPUT_LEN = 800
 
-const ListParams = Schema.Struct({
-  action: Schema.Literals(["list"]).annotate({ description: "List recent sessions" }),
+export const Parameters = Schema.Struct({
+  action: Schema.Literals(["list", "get"]).annotate({
+    description: '"list" lists recent sessions; "get" reads a session\'s conversation',
+  }),
+  sessionID: Schema.optional(Schema.String).annotate({
+    description: 'The session ID to read. Required when action is "get".',
+  }),
   scope: Schema.optional(Schema.Literals(["project", "global"])).annotate({
     description:
       '"project" lists sessions in the current project (default); "global" lists sessions across every project on this server.',
@@ -18,15 +23,7 @@ const ListParams = Schema.Struct({
     description: 'Filter by project directory. Only used with scope "global".',
   }),
   limit: Schema.optional(NonNegativeInt).annotate({
-    description: "Maximum number of sessions to return (default 20).",
-  }),
-})
-
-const GetParams = Schema.Struct({
-  action: Schema.Literals(["get"]).annotate({ description: "Read a session's conversation" }),
-  sessionID: Schema.String.annotate({ description: "The session ID to read." }),
-  limit: Schema.optional(NonNegativeInt).annotate({
-    description: "Only include the last N messages of the conversation.",
+    description: "Maximum number of sessions (list) or messages (get) to return (default 20).",
   }),
   role: Schema.optional(Schema.Literals(["user", "assistant"])).annotate({
     description: 'Only include messages of this role ("user" skims just the prompts).',
@@ -38,8 +35,6 @@ const GetParams = Schema.Struct({
     description: "Include reasoning parts (default false).",
   }),
 })
-
-export const Parameters = Schema.Union([ListParams, GetParams])
 
 type GetOpts = {
   limit?: number
@@ -136,7 +131,7 @@ export const SessionTool = Tool.define<typeof Parameters, { count?: number }, Se
     const sessions = yield* Session.Service
 
     const list = Effect.fn("SessionTool.list")(function* (
-      params: Schema.Schema.Type<typeof ListParams>,
+      params: Schema.Schema.Type<typeof Parameters>,
       ctx: Tool.Context,
     ) {
       yield* ctx.ask({
@@ -178,7 +173,10 @@ export const SessionTool = Tool.define<typeof Parameters, { count?: number }, Se
       }
     })
 
-    const get = Effect.fn("SessionTool.get")(function* (params: Schema.Schema.Type<typeof GetParams>, ctx: Tool.Context) {
+    const get = Effect.fn("SessionTool.get")(function* (params: Schema.Schema.Type<typeof Parameters>, ctx: Tool.Context) {
+      if (!params.sessionID) {
+        return yield* Effect.fail(new Error('action "get" requires a "sessionID"'))
+      }
       yield* ctx.ask({
         permission: "session",
         patterns: [`get:${params.sessionID}`],
