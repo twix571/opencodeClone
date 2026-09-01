@@ -721,6 +721,9 @@ export const dict = {
   "session.review.noChanges": "Brak zmian",
   "session.review.noUncommittedChanges": "Brak jeszcze niezatwierdzonych zmian",
   "session.review.noBranchChanges": "Brak jeszcze zmian w gałęzi",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Wybierz plik do otwarcia",
   "session.files.all": "Wszystkie pliki",
   "session.files.empty": "Brak plików",

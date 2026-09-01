@@ -719,6 +719,9 @@ export const dict = {
   "session.review.noChanges": "ምንም ለውጦች የሉም",
   "session.review.noUncommittedChanges": "ገና ምንም ያልተደረጉ ለውጦች የሉም",
   "session.review.noBranchChanges": "ገና ምንም ቅርንጫፍ ምንም ለውጥ የለም",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "ለመክፈት ፋይል ምረጥ",
   "session.files.all": "ሁሉም ፋይሎች",
   "session.files.empty": "ምንም ፋይሎች",

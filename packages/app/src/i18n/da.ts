@@ -655,6 +655,9 @@ export const dict = {
   "session.review.noChanges": "Ingen ændringer",
   "session.review.noUncommittedChanges": "Ingen ændringer uden commit endnu",
   "session.review.noBranchChanges": "Ingen grenændringer endnu",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Vælg en fil at åbne",
   "session.files.all": "Alle filer",
   "session.files.empty": "Ingen filer",

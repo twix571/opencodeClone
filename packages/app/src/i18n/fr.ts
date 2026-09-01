@@ -732,6 +732,9 @@ export const dict = {
   "session.review.noVcs": "Aucun système de gestion de versions Git détecté ; modifications non affichées",
   "session.review.noSnapshot":
     "Le suivi des instantanés est désactivé dans la configuration, les modifications de session sont donc indisponibles",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Sélectionnez un fichier à ouvrir",
   "session.files.all": "Tous les fichiers",
   "session.files.empty": "Aucun fichier",

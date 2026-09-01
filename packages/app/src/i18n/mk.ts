@@ -736,6 +736,9 @@ export const dict = {
   "session.review.noChanges": "Нема промени",
   "session.review.noUncommittedChanges": "Сè уште нема необврзани промени",
   "session.review.noBranchChanges": "Сè уште нема промени во гранката",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Изберете датотека за отворање",
   "session.files.all": "Сите датотеки",
   "session.files.empty": "Нема датотеки",

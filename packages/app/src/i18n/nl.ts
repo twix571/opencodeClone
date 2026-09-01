@@ -740,6 +740,9 @@ export const dict = {
   "session.review.noChanges": "Geen wijzigingen",
   "session.review.noUncommittedChanges": "Er zijn nog geen niet-gecommitteerde wijzigingen",
   "session.review.noBranchChanges": "Er zijn nog geen branchwijzigingen",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Selecteer een bestand om te openen",
   "session.files.all": "Alle bestanden",
   "session.files.empty": "Geen bestanden",

@@ -738,6 +738,9 @@ export const dict = {
   "session.review.noChanges": "Sense canvis",
   "session.review.noUncommittedChanges": "Encara no hi ha canvis no compromesos",
   "session.review.noBranchChanges": "Encara no hi ha canvis de branca",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Seleccioneu un fitxer per obrir",
   "session.files.all": "Tots els fitxers",
   "session.files.empty": "No hi ha fitxers",

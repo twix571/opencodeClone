@@ -734,6 +734,9 @@ export const dict = {
   "session.review.noChanges": "Nav izmaiņu",
   "session.review.noUncommittedChanges": "Vēl nav neapstiprinātu izmaiņu",
   "session.review.noBranchChanges": "Vēl nav zara izmaiņu",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Izvēlies failu atvēršanai",
   "session.files.all": "Visi faili",
   "session.files.empty": "Nav failu",

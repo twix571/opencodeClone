@@ -737,6 +737,9 @@ export const dict = {
   "session.review.noChanges": "Ոչ փոփոխություններ",
   "session.review.noUncommittedChanges": "Դեռեւս չկատարված փոփոխություններ",
   "session.review.noBranchChanges": "Ճյուղի փոփոխություններ դեռ չկան",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Ընտրեք ֆայլ բացելու համար",
   "session.files.all": "Բոլոր ֆայլերը",
   "session.files.empty": "Ֆայլեր չկան",

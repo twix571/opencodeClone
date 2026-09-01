@@ -798,6 +798,9 @@ export const dict = {
   "session.review.noUncommittedChanges": "Belum ada perubahan yang belum dikomit",
   "session.review.noBranchChanges": "Belum ada perubahan cabang",
 
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Pilih berkas untuk dibuka",
   "session.files.all": "Semua berkas",
   "session.files.empty": "Tidak ada berkas",

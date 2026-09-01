@@ -717,6 +717,9 @@ export const dict = {
   "session.review.noChanges": "変更なし",
   "session.review.noUncommittedChanges": "コミットされていない変更はまだありません",
   "session.review.noBranchChanges": "ブランチの変更はまだありません",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "開くファイルを選択",
   "session.files.all": "すべてのファイル",
   "session.files.empty": "ファイルなし",

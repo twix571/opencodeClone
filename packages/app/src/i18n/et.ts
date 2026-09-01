@@ -728,6 +728,9 @@ export const dict = {
   "session.review.noChanges": "Muudatusi pole",
   "session.review.noUncommittedChanges": "Tehmata muudatusi pole veel tehtud",
   "session.review.noBranchChanges": "Filiaali muudatusi veel pole",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Valige avamiseks fail",
   "session.files.all": "Kõik failid",
   "session.files.empty": "Faile pole",

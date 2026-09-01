@@ -729,6 +729,9 @@ export const dict = {
   "session.review.noChanges": "គ្មានការផ្លាស់ប្តូរទេ។",
   "session.review.noUncommittedChanges": "មិនទាន់មានការផ្លាស់ប្តូរដែលមិនទាន់បានកំណត់នៅឡើយ",
   "session.review.noBranchChanges": "មិនទាន់មានការផ្លាស់ប្តូរសាខានៅឡើយទេ",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "ជ្រើសរើសឯកសារដើម្បីបើក",
   "session.files.all": "ឯកសារទាំងអស់។",
   "session.files.empty": "គ្មានឯកសារទេ។",

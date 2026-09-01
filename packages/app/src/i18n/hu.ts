@@ -739,6 +739,9 @@ export const dict = {
   "session.review.noChanges": "Nincs változás",
   "session.review.noUncommittedChanges": "Még nincsenek végrehajtatlan változtatások",
   "session.review.noBranchChanges": "A fióktelep még nem változott",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Válassza ki a megnyitandó fájlt",
   "session.files.all": "Minden fájl",
   "session.files.empty": "Nincsenek fájlok",

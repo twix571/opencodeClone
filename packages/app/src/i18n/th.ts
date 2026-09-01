@@ -767,6 +767,9 @@ export const dict = {
   "session.review.noUncommittedChanges": "ยังไม่มีการเปลี่ยนแปลงที่รอคอมมิต",
   "session.review.noBranchChanges": "ยังไม่มีการเปลี่ยนแปลงในสาขา",
 
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "เลือกไฟล์เพื่อเปิด",
   "session.files.empty": "ไม่มีไฟล์",
   "session.files.all": "ไฟล์ทั้งหมด",

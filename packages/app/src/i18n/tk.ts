@@ -732,6 +732,9 @@ export const dict = {
   "session.review.noChanges": "Üýtgeşme ýok",
   "session.review.noUncommittedChanges": "Entek rugsat berilmedik üýtgeşmeler ýok",
   "session.review.noBranchChanges": "Entek hiç hili şahamça üýtgemeýär",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Açmak üçin bir faýl saýlaň",
   "session.files.all": "Fileshli faýllar",
   "session.files.empty": "Faýl ýok",

@@ -780,6 +780,9 @@ export const dict = {
   "session.review.noUncommittedChanges": "Henüz işlenmemiş değişiklik yok",
   "session.review.noBranchChanges": "Henüz dal değişikliği yok",
 
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Açmak için bir dosya seçin",
   "session.files.all": "Tüm dosyalar",
   "session.files.empty": "Dosya yok",

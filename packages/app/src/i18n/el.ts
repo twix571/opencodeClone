@@ -740,6 +740,9 @@ export const dict = {
   "session.review.noChanges": "Χωρίς αλλαγές",
   "session.review.noUncommittedChanges": "Δεν υπάρχουν ακόμη μη δεσμευμένες αλλαγές",
   "session.review.noBranchChanges": "Δεν υπάρχουν ακόμη αλλαγές κλάδου",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Επιλέξτε ένα αρχείο για άνοιγμα",
   "session.files.all": "Όλα τα αρχεία",
   "session.files.empty": "Δεν υπάρχουν αρχεία",

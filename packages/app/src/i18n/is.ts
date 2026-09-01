@@ -735,6 +735,9 @@ export const dict = {
   "session.review.noChanges": "Engar breytingar",
   "session.review.noUncommittedChanges": "Engar óbundnar breytingar ennþá",
   "session.review.noBranchChanges": "Engar greinarbreytingar ennþá",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Veldu skrá til að opna",
   "session.files.all": "Allar skrár",
   "session.files.empty": "Engar skrár",

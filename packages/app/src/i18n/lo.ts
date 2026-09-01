@@ -727,6 +727,9 @@ export const dict = {
   "session.review.noChanges": "ບໍ່ມີການປ່ຽນແປງ",
   "session.review.noUncommittedChanges": "ບໍ່ມີການປ່ຽນແປງທີ່ບໍ່ໄດ້ຕົກລົງເທື່ອ",
   "session.review.noBranchChanges": "ບໍ່ມີການປ່ຽນແປງສາຂາເທື່ອ",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "ເລືອກໄຟລ໌ທີ່ຈະເປີດ",
   "session.files.all": "ໄຟລ໌ທັງໝົດ",
   "session.files.empty": "ບໍ່ມີໄຟລ໌",

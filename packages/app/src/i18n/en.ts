@@ -697,6 +697,9 @@ export const dict = {
   "session.review.noUncommittedChanges": "No uncommitted changes yet",
   "session.review.noBranchChanges": "No branch changes yet",
 
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Select a file to open",
   "session.files.all": "All files",
   "session.files.empty": "No files",

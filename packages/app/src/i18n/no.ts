@@ -654,6 +654,9 @@ export const dict = {
     "Snapshot-sporing er deaktivert i konfigurasjonen, så sesjonsendringer er ikke tilgjengelige",
   "session.review.noChanges": "Ingen endringer",
 
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Velg en fil å åpne",
   "session.files.all": "Alle filer",
   "session.files.empty": "Ingen filer",

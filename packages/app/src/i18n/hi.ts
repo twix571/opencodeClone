@@ -742,6 +742,9 @@ export const dict = {
   "session.review.noChanges": "कोई परिवर्तन नहीं",
   "session.review.noUncommittedChanges": "अभी तक कोई अप्रतिबद्ध परिवर्तन नहीं",
   "session.review.noBranchChanges": "अभी तक शाखा में कोई परिवर्तन नहीं",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "खोलने के लिए एक फ़ाइल का चयन करें",
   "session.files.all": "सभी फ़ाइलें",
   "session.files.empty": "कोई फ़ाइल नहीं",

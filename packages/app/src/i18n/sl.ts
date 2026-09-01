@@ -732,6 +732,9 @@ export const dict = {
   "session.review.noChanges": "Brez sprememb",
   "session.review.noUncommittedChanges": "Ni še nepotrjenih sprememb",
   "session.review.noBranchChanges": "Ni še nobenih sprememb veje",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Izberite datoteko, ki jo želite odpreti",
   "session.files.all": "Vse datoteke",
   "session.files.empty": "Ni datotek",

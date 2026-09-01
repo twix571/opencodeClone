@@ -774,6 +774,9 @@ export const dict = {
   "session.review.noChanges": "Нет изменений",
   "session.review.noUncommittedChanges": "Пока нет незафиксированных изменений",
   "session.review.noBranchChanges": "Пока нет изменений в ветке",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Выберите файл, чтобы открыть",
   "session.files.all": "Все файлы",
   "session.files.empty": "Нет файлов",

@@ -762,6 +762,9 @@ export const dict = {
   "session.review.noBranchChanges": "尚無分支變更",
   "session.review.noVcs": "未偵測到 Git 版本控制系統，無法顯示變更",
   "session.review.noSnapshot": "設定中已停用快照追蹤，因此無法使用工作階段變更",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "選取要開啟的檔案",
   "session.files.all": "所有檔案",
   "session.files.empty": "沒有檔案",

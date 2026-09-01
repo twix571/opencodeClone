@@ -734,6 +734,9 @@ export const dict = {
   "session.review.noChanges": "Nicio modificare",
   "session.review.noUncommittedChanges": "Nicio modificare necomisă încă",
   "session.review.noBranchChanges": "Nicio modificare pe ramură încă",
+  "session.readOnly.enable": "Mark session as read-only",
+  "session.readOnly.disable": "Allow editing in this session",
+
   "session.files.selectToOpen": "Selectează un fișier pentru deschidere",
   "session.files.all": "Toate fișierele",
   "session.files.empty": "Niciun fișier",
