@@ -26,9 +26,11 @@ export const apply = Effect.fn("SessionReminders.apply")(function* (input: {
   if (!userMessage) return input.messages
 
   // Corrective pings from proactive enforcement land between provider turns so
-  // the agent sees them mid-run instead of only after the run finishes.
+  // the agent sees them mid-run instead of only after the run finishes. They are
+  // persisted (unlike the transient plan reminders) so the correction stays
+  // visible in the timeline and I/O panel.
   for (const text of yield* proactive.drain(input.session.id)) {
-    userMessage.parts.push({
+    const part = yield* sessions.updatePart({
       id: PartID.ascending(),
       messageID: userMessage.info.id,
       sessionID: userMessage.info.sessionID,
@@ -36,6 +38,7 @@ export const apply = Effect.fn("SessionReminders.apply")(function* (input: {
       text,
       synthetic: true,
     })
+    userMessage.parts.push(part)
   }
 
   if (!flags.experimentalPlanMode) {

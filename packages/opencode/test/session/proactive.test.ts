@@ -286,6 +286,17 @@ describe("proactive enforcement", () => {
       expect(state.status).toBe("error")
       expect(String(state.status === "error" ? state.error : "")).toContain("prevents you")
 
+      // The ping is persisted onto the user message, so it stays visible in the
+      // timeline and the I/O panel after the run finishes.
+      const pingPart = messages
+        .flatMap((m) => m.parts)
+        .find(
+          (p): p is SessionV1.TextPart =>
+            p.type === "text" && p.synthetic === true && p.text.startsWith("[Supervisor correction]"),
+        )
+      expect(pingPart).toBeDefined()
+      expect(pingPart!.text).toContain("denied by the permission rules")
+
       // The ping reached the running agent on the next provider request.
       const inputs = yield* llm.inputs
       const pingSeen = inputs.some((body) => JSON.stringify(body).includes("[Supervisor correction]"))
