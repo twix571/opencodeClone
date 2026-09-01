@@ -101,8 +101,10 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
     })
   }
 
+  const ringLabel = () => `${context()?.usage ?? 0}%`
+
   const circle = () => (
-    <div class="flex items-center justify-center">
+    <div class="relative flex items-center justify-center">
       <ProgressCircle
         size={16}
         strokeWidth={2}
@@ -117,11 +119,17 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
             : undefined
         }
       />
+      <span class="absolute inset-0 flex items-center justify-center text-[6px] font-medium leading-none text-icon-base">
+        {ringLabel()}
+      </span>
     </div>
   )
   const circleV2 = () => (
-    <div class="flex items-center justify-center">
+    <div class="relative flex items-center justify-center">
       <ProgressCircleV2 percentage={context()?.usage ?? 0} />
+      <span class="absolute inset-0 flex items-center justify-center text-[6px] font-medium leading-none text-v2-icon-icon-base">
+        {ringLabel()}
+      </span>
     </div>
   )
 
